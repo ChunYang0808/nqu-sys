@@ -217,17 +217,24 @@ loginForm.addEventListener('submit', async (event) => {
   initializeSelections();
   const overlay = document.getElementById('generation-overlay');
   overlay.hidden = false;
-  try {
-    const record = await window.NQU_AI.generateStudentRecord(generationContext);
+  // 網路或 AI 供應商偶發未結束的請求不可阻塞網站；先以本機展示資料開啟，
+  // AI 完成後再無縫置換成生成資料。
+  const aiTask = window.NQU_AI.generateStudentRecord(generationContext).then((record) => {
     if (isUsableAiRecord(record, generationContext)) {
       generatedRecord = record;
       initializeSelections();
     }
-  } catch (error) {
+  }).catch((error) => {
     console.warn('AI 模擬資料未載入，改用展示資料。', error);
-  } finally {
-    overlay.hidden = true;
-  }
+  });
+  let releaseOverlay;
+  const displayTimeout = new Promise((resolve) => {
+    releaseOverlay = resolve;
+  });
+  const displayTimer = window.setTimeout(releaseOverlay, 15000);
+  await Promise.race([aiTask, displayTimeout]);
+  window.clearTimeout(displayTimer);
+  overlay.hidden = true;
 });
 
 loginForm.addEventListener('reset', () => setTimeout(() => { departmentSelect.value = '資訊工程學系'; levelSelect.value = 'bachelor'; populateGrades(); }, 0));
