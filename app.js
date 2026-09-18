@@ -1,6 +1,34 @@
 const departments = ['國際暨大陸事務學系', '建築學系', '海洋與邊境管理學系', '應用英語學系', '華語文學系', '都市計畫與景觀學系', '企業管理學系', '工業工程與管理學系', '觀光管理學系', '運動與休閒學系', '電機工程學系', '資訊工程學系', '土木與工程管理學系', '食品科學系', '護理學系', '長期照護學系', '社會工作學系'];
 const shortDepartments = { '資訊工程學系': '資工', '電機工程學系': '電機', '企業管理學系': '企管', '觀光管理學系': '觀光', '運動與休閒學系': '運休', '土木與工程管理學系': '土木', '國際暨大陸事務學系': '國際', '應用英語學系': '應英', '華語文學系': '華文', '食品科學系': '食科', '長期照護學系': '長照', '社會工作學系': '社工', '海洋與邊境管理學系': '海邊', '工業工程與管理學系': '工管', '都市計畫與景觀學系': '都景', '建築學系': '建築', '護理學系': '護理' };
 const csFaculty = ['吳佳駿', '周祥敏', '李錫捷', '柯志亨', '潘進儒', '王建鈞', '趙于翔', '陳正德', '陳鍾誠', '馮玄明'];
+const facultyGivenNames = ['子晴', '承恩', '雅婷', '昱安', '思穎', '柏宇', '若涵', '俊佑', '宜蓁', '家豪', '宥真', '書帆'];
+const facultySurnames = ['林', '陳', '王', '李', '張', '黃', '吳', '蔡', '許', '鄭', '劉', '謝'];
+const generalFaculty = ['林知遠', '陳映彤', '王書庭', '李嘉恩', '張語晴', '黃柏鈞', '許欣然', '鄭思齊', '劉品妤', '謝宗翰'];
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+const safeCourseText = (value) => String(value ?? '').replace(/[<>]/g, '').slice(0, 120);
+const sportFaculty = ['周昱廷', '林怡萱', '陳彥勳', '張育誠', '黃欣怡', '許柏宇', '劉冠廷', '蔡宜庭'];
+const chineseFaculty = ['林書妤', '陳婉晴', '王冠文', '李宜臻', '張思涵', '黃家緯', '許庭瑜', '劉詠心', '蔡孟潔', '鄭雅琳'];
+const englishFaculty = ['林艾琳', '陳凱文', '王伊婷', '李安琪', '張潔西', '黃美玲', '許莉莎', '劉雅倫', '蔡凱特', '鄭偉倫'];
+const departmentRooms = {
+  '資訊工程學系': ['I101', 'I102', 'I103', 'E318', 'E319', 'E320', 'E321'],
+  '電機工程學系': ['E220', 'E221', 'E222', 'E223'],
+  '土木與工程管理學系': ['E119', 'E120', 'E121', 'E122'],
+  '食品科學系': ['E413', 'E414', 'E415', 'E416'],
+  '護理學系': ['B10', 'B11', 'D106', 'D203', 'D204'],
+  '長期照護學系': ['B15', 'D201', 'D202', 'D301'],
+  '社會工作學系': ['B12', 'B16', 'D102', 'D103'],
+  '建築學系': ['513', '514', '515', '535'],
+  '企業管理學系': ['324', '329', '330', '307'],
+  '觀光管理學系': ['228', '230', '231', '232'],
+  '運動與休閒學系': ['129', '132', '133', 'A104'],
+  '國際暨大陸事務學系': ['106', '107', '110', '111'],
+  '海洋與邊境管理學系': ['206', '208', '209'],
+  '華語文學系': ['404', '406', '407', '409'],
+  '應用英語學系': ['427', '429', '430', '450'],
+  '都市計畫與景觀學系': ['513', '514', '535'],
+  '工業工程與管理學系': ['306', '307', '308']
+};
+const generalRooms = ['207', '209', '409', '106', '128', 'D202', 'E102', 'E203', '429', 'B317', '701', '702'];
 const classrooms = `I101｜I101圖資電腦教室
 I102｜I102圖資電腦教室
 103｜楊肅斌演講廳
@@ -202,6 +230,7 @@ levelSelect.addEventListener('change', populateGrades);
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  document.getElementById('login-password').value = '';
   const studentId = document.getElementById('login-id').value.trim() || 'AI115410001';
   const studentName = document.getElementById('login-name').value.trim() || 'AI 模擬學生';
   const department = departmentSelect.value;
@@ -213,7 +242,11 @@ loginForm.addEventListener('submit', async (event) => {
   loginScreen.hidden = true;
   appShell.hidden = false;
   const generationContext = { studentId, studentName, department, grade: gradeText, level: levelSelect.value, departments, csFaculty, classrooms };
-  generatedRecord = window.NQU_LOCAL.generateStudentRecord(generationContext);
+  loginContext = generationContext;
+  selectionTouched = false;
+  departmentCatalogCache.clear();
+  historicalRecordCache.clear();
+  generatedRecord = normalizeRecord(window.NQU_LOCAL.generateStudentRecord(generationContext), department, gradeText);
   initializeSelections();
   const overlay = document.getElementById('generation-overlay');
   overlay.hidden = false;
@@ -225,8 +258,8 @@ loginForm.addEventListener('submit', async (event) => {
   Promise.resolve()
     .then(() => window.NQU_AI.generateStudentRecord(generationContext))
     .then((record) => {
-      if (isUsableAiRecord(record, generationContext)) {
-        generatedRecord = record;
+      if (!selectionTouched && isUsableAiRecord(record, generationContext)) {
+        generatedRecord = normalizeRecord(record, department, gradeText);
         initializeSelections();
       }
     })
@@ -266,13 +299,109 @@ const sampleCourses = [
 
 let generatedRecord = null;
 let selectedCourseCodes = new Set();
+let loginContext = null;
+let selectionTouched = false;
+const departmentCatalogCache = new Map();
+const roomDirectory = new Map(classrooms.map((entry) => {
+  const [code, label] = entry.split('｜');
+  return [code, label];
+}));
+
+function facultyFor(department) {
+  if (department === '資訊工程學系') return csFaculty;
+  const offset = Math.max(0, departments.indexOf(department));
+  return facultyGivenNames.map((given, index) => `${facultySurnames[(index + offset) % facultySurnames.length]}${given}`);
+}
+
+function roomFor(department, index) {
+  const codes = department === '通識教育中心' ? generalRooms : departmentRooms[department] || ['E202', 'E203', 'E204'];
+  const code = codes[index % codes.length];
+  return roomDirectory.get(code) || `${code}普通教室`;
+}
+
+function gradeLabel(number) {
+  return `${['一', '二', '三', '四', '五', '六'][Math.max(0, Math.min(5, Number(number) - 1))]}年級`;
+}
+
+function catalogGrade(program, number) {
+  const year = gradeLabel(number);
+  if (program?.includes('博士')) return `博士${year}`;
+  if (program?.includes('碩士')) return `碩士${year}`;
+  return year;
+}
+
+function normalizeRecord(record, department, grade, catalog = false, term = '115學年度第1學期') {
+  const departmentIndex = Math.max(0, departments.indexOf(department));
+  const courses = (record.courses || []).map((course, index) => {
+    const general = index >= 30 || course.requiredType === '通識';
+    const unit = general ? '通識教育中心' : department;
+    const teacherList = general ? generalFaculty : facultyFor(department);
+    const room = general ? roomFor('通識教育中心', index) : roomFor(department, index);
+    const gradeNumber = ['一', '二', '三', '四', '五', '六'].findIndex((character) => grade.includes(character)) + 1 || 2;
+    const termCode = term === '115學年度第1學期' ? '' : `H${term.replace(/\D/g, '')}-`;
+    const code = catalog ? `${termCode}D${String(departmentIndex + 1).padStart(2, '0')}G${gradeNumber}-${String(index + 1).padStart(3, '0')}` : course.code;
+    return {
+      ...course, code, offeringDepartment: unit,
+      name: safeCourseText(course.name), englishName: safeCourseText(course.englishName),
+      className: general ? '日大學通識' : `${shortDepartments[department] || department}${grade.replace('年級', '').replace('碩士', '碩').replace('博士', '博')}`,
+      credits: general ? '2.0' : String(course.credits || '3.0'),
+      hours: general ? '2.0' : String(course.hours || course.credits || '3.0'),
+      requiredType: general ? '通識' : course.requiredType === '必修' ? '必修' : '選修',
+      teacher: !general && department === '資訊工程學系' && csFaculty.includes(course.teacher) ? course.teacher : teacherList[index % teacherList.length],
+      classroom: room,
+      selected: !catalog && Boolean(course.selected),
+      remarks: Number(course.enrolled) >= Number(course.capacity) ? '額滿' : ''
+    };
+  });
+  return { ...record, courses };
+}
+
+function departmentCatalog(department, grade = loginContext?.grade || '二年級', term = '115學年度第1學期') {
+  if (term === '115學年度第1學期' && department === loginContext?.department && grade === loginContext.grade) return generatedRecord?.courses || [];
+  const cacheKey = `${term}|${department}|${grade}`;
+  if (!departmentCatalogCache.has(cacheKey)) {
+    const context = { ...loginContext, studentId: `CATALOG-${term}-${departments.indexOf(department)}-${grade}`, department, grade };
+    departmentCatalogCache.set(cacheKey, normalizeRecord(window.NQU_LOCAL.generateStudentRecord(context), department, grade, true, term).courses.slice(0, 30));
+  }
+  return departmentCatalogCache.get(cacheKey);
+}
+
+function supplementalCourses() {
+  const names = [
+    ...Array.from({ length: 16 }, (_, i) => ({ code: `PE${String(i + 1).padStart(3, '0')}`, name: ['體育（一）', '體育（二）', '運動與健康', '球類運動', '體適能訓練', '休閒運動'][i % 6], englishName: 'Physical Education', category: '體育課程', teacher: sportFaculty[i % sportFaculty.length], room: ['701', '702', 'A104', '129'][i % 4], credits: '1.0' })),
+    ...['大學國文（一）', '大學國文（二）'].flatMap((name, level) => Array.from({ length: 10 }, (_, i) => ({ code: `CH${level + 1}${String(i + 1).padStart(2, '0')}`, name, englishName: `College Chinese ${level + 1}`, category: '大學國文', teacher: chineseFaculty[i], room: ['406', '407', '409', '424', '425'][i % 5], credits: '2.0' }))),
+    ...['大學英文（一）', '大學英文（二）'].flatMap((name, level) => Array.from({ length: 10 }, (_, i) => ({ code: `EN${level + 1}${String(i + 1).padStart(2, '0')}`, name, englishName: `College English ${level + 1}`, category: '大學英文', teacher: englishFaculty[i], room: ['427', '429', '430', '450', '424'][i % 5], credits: '2.0' })))
+  ];
+  const days = ['一', '二', '三', '四', '五'];
+  return names.map((item, index) => ({
+    code: item.code, name: item.name, englishName: item.englishName,
+    className: item.category === '體育課程' ? '日大學體育' : '日大學共同必修',
+    offeringDepartment: item.category === '體育課程' ? '體育室' : item.category === '大學國文' ? '華語文學系' : '應用英語學系',
+    group: String(index % 10 + 1).padStart(2, '0'), credits: item.credits, hours: '2.0',
+    requiredType: '必修', semesterType: '學期', teacher: item.teacher,
+    classroom: roomDirectory.get(item.room) || item.room,
+    time: `(${days[index % 5]})${index % 2 ? '3-4' : '5-6'}`,
+    capacity: item.category === '體育課程' ? '35' : '45', minimum: '10',
+    enrolled: index % 9 === 0 ? item.category === '體育課程' ? '35' : '45' : String(20 + index % 15),
+    remarks: index % 9 === 0 ? '額滿' : '', selected: false, category: item.category
+  }));
+}
+const sharedCourses = supplementalCourses();
+
+function courseRow(course) {
+  return [course.code, course.name, course.englishName, course.className, course.group, course.credits,
+    course.hours || course.credits, course.requiredType, course.semesterType || '學期', course.teacher,
+    course.classroom, course.time, course.capacity, course.minimum, course.enrolled, course.remarks || '', Boolean(course.selected), course.offeringDepartment || '通識教育中心'];
+}
+
 function activeCourses() {
   if (!generatedRecord?.courses?.length) return sampleCourses;
-  return generatedRecord.courses.map((course) => [course.code, course.name, course.englishName, course.className, course.group, course.credits, course.hours || course.credits, course.requiredType, course.semesterType || '學期', course.teacher, course.classroom, course.time, course.capacity || '50', course.minimum || '10', course.enrolled || '0', course.remarks || '', Boolean(course.selected)]);
+  return generatedRecord.courses.map(courseRow);
 }
 
 function selectedCourses() {
-  return activeCourses().filter((course) => selectedCourseCodes.has(course[0]));
+  return [...activeCourses(), ...Array.from(departmentCatalogCache.values()).flatMap((courses) => courses.map(courseRow)), ...sharedCourses.map(courseRow)]
+    .filter((course) => selectedCourseCodes.has(course[0]));
 }
 
 function initializeSelections() {
@@ -284,36 +413,56 @@ function selectedCredits() {
 }
 
 function findCourse(code) {
-  return activeCourses().find((course) => course[0] === code);
+  return [...activeCourses(), ...Array.from(departmentCatalogCache.values()).flatMap((courses) => courses.map(courseRow)), ...sharedCourses.map(courseRow)]
+    .find((course) => course[0] === code);
 }
 
 function isUsableAiRecord(record, context) {
   if (!record?.courses || record.courses.length < 54) return false;
+  if (!Array.isArray(record.grades)) return false;
+  const codes = record.courses.map((course) => String(course.code));
+  if (new Set(codes).size !== codes.length || codes.some((code) => !code || code === 'undefined')) return false;
   const selected = record.courses.filter((course) => course.selected);
+  if (context.department !== '資訊工程學系') {
+    const computingTitles = record.courses.slice(0, 30).filter((course) => /資料結構|演算法|程式設計|資料庫|計算機結構|作業系統|軟體工程|電腦網路|雲端運算/.test(String(course.name)));
+    if (computingTitles.length > 7) return false;
+  }
   const selectedCreditTotal = selected.reduce((total, course) => total + Number(course.credits || 0), 0);
   if (selected.length < 7 || selected.length > 9 || selectedCreditTotal < 16 || selectedCreditTotal > 25) return false;
-  const roomCodes = context.classrooms.map((entry) => entry.split('｜')[0]).sort((a, b) => b.length - a.length);
+  if (selected.some((course, index) => selected.slice(index + 1).some((other) => coursesOverlap(courseRow(course), courseRow(other))))) return false;
   return record.courses.every((course) => {
     const capacity = Number(course.capacity);
     const enrolled = Number(course.enrolled);
-    const roomIsKnown = roomCodes.some((code) => String(course.classroom).includes(code));
-    const csMatch = !String(course.className).includes('資工') || context.csFaculty.includes(course.teacher);
-    const capacityMatch = Number.isFinite(capacity) && Number.isFinite(enrolled) && enrolled <= capacity && (enrolled !== capacity || course.remarks === '額滿');
-    return roomIsKnown && csMatch && capacityMatch;
+    const capacityMatch = Number.isFinite(capacity) && Number.isFinite(enrolled) && capacity > 0 && enrolled >= 0 && enrolled <= capacity;
+    const timeMatch = /^\(([一二三四五])\)(\d+)-(\d+)$/.test(String(course.time));
+    const creditMatch = Number.isFinite(Number(course.credits)) && Number(course.credits) > 0;
+    return capacityMatch && timeMatch && creditMatch && safeCourseText(course.name).length > 0;
   });
 }
 
 function courseTable(mode = 'result', rows = selectedCourses()) {
   const actionLabel = mode === 'withdraw' ? '退選' : mode === 'add' ? '加選' : '';
   const actionHeader = actionLabel ? `<th>${actionLabel}</th>` : '';
-  const actions = (index, row) => actionLabel ? `<td><input type="checkbox" data-course-choice="${row[0]}" aria-label="${actionLabel}第 ${index + 1} 門課" ${actionLabel === '加選' && selectedCourseCodes.has(row[0]) ? 'checked' : ''} ${actionLabel === '加選' && row[15] === '額滿' && !selectedCourseCodes.has(row[0]) ? 'disabled' : ''}></td>` : '';
+  const actions = (index, row) => actionLabel ? `<td><input type="checkbox" data-course-choice="${row[0]}" aria-label="${actionLabel}第 ${index + 1} 門課" ${actionLabel === '加選' && selectedCourseCodes.has(row[0]) ? 'checked disabled title="已選課"' : ''} ${actionLabel === '加選' && row[15] === '額滿' && !selectedCourseCodes.has(row[0]) ? 'disabled title="課程額滿"' : ''}></td>` : '';
   return `<div class="table-wrap"><table class="course-grid"><thead><tr>${actionHeader}<th>選課代號</th><th>科目</th><th>科目英文名</th><th>班級</th><th>分組</th><th>學分</th><th>小時</th><th>必選修</th><th>開課別</th><th>教師</th><th>教室</th><th>時間</th><th>上限人數</th><th>下限人數</th><th>實收人數</th><th>備註</th></tr></thead><tbody>${rows.map((row, index) => `<tr class="${row[15] === '額滿' ? 'is-full' : ''}">${actions(index, row)}${row.slice(0, 16).map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
-function renderAddCourseList(category = '一般課程', selection = '') {
-  const selectedText = selection ? `<p class="selection-summary">目前查詢條件：${selection}</p>` : '';
-  const rows = category === '通識課程' ? activeCourses().filter((course) => course[7] === '通識') : activeCourses().filter((course) => course[7] !== '通識');
-  return `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　線上加選作業　&gt;　${category}</div><h1 class="course-title">網路選課－${category}線上加選作業</h1>${selectedText}<div class="submit-row"><span>請選擇欲加選的科目：${category === '通識課程' ? '額滿課程以紅字標示，無法勾選。' : ''}</span><span><button class="small-button" data-add-back>回上一頁</button><button class="small-button" data-commit-add>確定送出</button></span></div>${courseTable('add', rows)}<div class="submit-row"><span></span><span><button class="small-button" data-add-back>回上一頁</button><button class="small-button" data-commit-add>確定送出</button></span></div></div>`;
+function renderAddCourseList(category = '一般課程', filters = {}) {
+  const department = filters.department || loginContext.department;
+  const grade = filters.grade ? catalogGrade(filters.program, filters.grade) : loginContext.grade;
+  const selectionText = category === '一般課程' ? `${filters.program || '日間部學士班'}／${department}／${grade}` : filters.field || '';
+  const selectedText = selectionText ? `<p class="selection-summary">目前查詢條件：${selectionText}</p>` : '';
+  let rows;
+  if (category === '通識課程') rows = activeCourses().filter((course) => course[7] === '通識');
+  else if (category === '一般課程') rows = departmentCatalog(department, grade).map(courseRow).filter((course) => course[7] !== '通識');
+  else rows = sharedCourses.filter((course) => course.category === category).map(courseRow);
+  if (category === '通識課程' && filters.field && filters.field !== '全部') {
+    const fields = ['人文藝術', '社會科學', '自然科學'];
+    const fieldIndex = fields.indexOf(filters.field);
+    rows = rows.filter((_, index) => index % fields.length === fieldIndex);
+  }
+  const empty = rows.length ? courseTable('add', rows) : '<p class="small-note">此條件目前沒有開設課程。</p>';
+  return `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　線上加選作業　&gt;　${category}</div><h1 class="course-title">網路選課－${category}線上加選作業</h1>${selectedText}<div class="submit-row"><span>請選擇欲加選的科目；額滿課程無法勾選。</span><span><button class="small-button" data-add-back>回上一頁</button><button class="small-button" data-commit-add>確定送出</button></span></div><p class="selection-feedback" role="status" aria-live="polite"></p>${empty}<div class="submit-row"><span></span><span><button class="small-button" data-add-back>回上一頁</button><button class="small-button" data-commit-add>確定送出</button></span></div></div>`;
 }
 
 function renderResultList() {
@@ -327,8 +476,8 @@ function renderCoursePage(page) {
     <h1 class="course-title">網路選課－線上加選作業－</h1>
     <p class="course-note">請選擇要加選的課程類別：（欲查詢二技一、二年級之課程者，年級請選擇 3、4）</p>
     <table class="choice-table"><tbody>
-      <tr><td>通識課程：</td><td><select><option>全部</option><option>人文藝術</option><option>社會科學</option><option>自然科學</option></select> <button class="small-button" data-view-add="通識課程">確定</button></td></tr>
-      <tr><td>一般課程：</td><td><select aria-label="學制"><option>日間部學士班</option><option>日間部研究所碩士班</option><option>日間部博士班</option><option>推廣教育學分班</option></select> <select aria-label="系所">${departments.map((department) => `<option>${department}</option>`).join('')}</select>　年級：<select aria-label="年級"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select> <button class="small-button" data-view-add="一般課程">確定</button></td></tr>
+      <tr><td>通識課程：</td><td><select aria-label="通識領域"><option>全部</option><option>人文藝術</option><option>社會科學</option><option>自然科學</option></select> <button class="small-button" data-view-add="通識課程">確定</button></td></tr>
+      <tr><td>一般課程：</td><td><select aria-label="學制"><option ${loginContext.level === 'bachelor' ? 'selected' : ''}>日間部學士班</option><option ${loginContext.level === 'master' ? 'selected' : ''}>日間部研究所碩士班</option><option ${loginContext.level === 'doctoral' ? 'selected' : ''}>日間部博士班</option><option>推廣教育學分班</option></select> <select aria-label="系所">${departments.map((department) => `<option ${department === loginContext.department ? 'selected' : ''}>${department}</option>`).join('')}</select>　年級：<select aria-label="年級">${Array.from({ length: loginContext.level === 'doctoral' ? 6 : loginContext.level === 'master' ? 4 : 5 }, (_, index) => index + 1).map((number) => `<option ${loginContext.grade.includes(['一', '二', '三', '四', '五', '六'][number - 1]) ? 'selected' : ''}>${number}</option>`).join('')}</select> <button class="small-button" data-view-add="一般課程">確定</button></td></tr>
       <tr><td>體育課程：</td><td><button class="small-button" data-view-add="體育課程">確定</button></td></tr>
       <tr><td>大學國文：</td><td><button class="small-button" data-view-add="大學國文">確定</button></td></tr>
       <tr><td>大學英文：</td><td><button class="small-button" data-view-add="大學英文">確定</button></td></tr>
@@ -360,12 +509,12 @@ function renderCoursePage(page) {
   if (page === '歷年成績查詢') return shell(queryForm(page, '請選擇查詢學制：', selectOptions(['全部學期', '日間部學士班']), 'history'));
   if (page === '選課資料查詢') return shell(queryForm(page, '請選擇年度及學期：', selectOptions(['115學年度第1學期', '114學年度第2學期']), 'courses'));
   if (page === '抵免科目查詢') return shell(noDataPage(page, '目前無抵免科目資料'));
-  if (page === '課程資料查詢') return shell(queryForm(page, '請選擇開課學年期、開課系所與年級：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions(['資訊工程學系', '全校課程'])}${selectOptions(['全部年級', '一年級', '二年級', '三年級', '四年級'])}`, 'courseCatalog'));
-  if (page === '課程規劃表') return shell(queryForm(page, '請選擇系所及入學學年度：', `${selectOptions(['資訊工程學系', '電機工程學系', '企業管理學系'])}${selectOptions(['115學年度入學', '114學年度入學', '113學年度入學'])}`, 'plan'));
-  if (page === '我的課表') return shell(scheduleResult('我的課表', '資訊工程學系二年級'));
-  if (page === '教師課表查詢') return shell(queryForm(page, '請選擇開課學年期及教師：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions(csFaculty)}`, 'teacher'));
+  if (page === '課程資料查詢') return shell(queryForm(page, '請選擇開課學年期、開課系所與年級：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions([...departments, '全校課程'], 'data-query-department', loginContext.department)}${selectOptions(['全部年級', '一年級', '二年級', '三年級', '四年級', '五年級', '碩士一年級', '碩士二年級', '博士一年級', '博士二年級'], '', loginContext.level === 'bachelor' ? '全部年級' : loginContext.grade)}`, 'courseCatalog'));
+  if (page === '課程規劃表') return shell(queryForm(page, '請選擇系所及入學學年度：', `${selectOptions(departments, '', loginContext.department)}${selectOptions(['115學年度入學', '114學年度入學', '113學年度入學'])}`, 'plan'));
+  if (page === '我的課表') return shell(scheduleResult('我的課表'));
+  if (page === '教師課表查詢') return shell(queryForm(page, '請選擇開課學年期、系所及教師：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions(departments, 'data-teacher-department', loginContext.department)}${selectOptions(facultyFor(loginContext.department), 'data-teacher-name')}`, 'teacher'));
   if (page === '教室課表查詢') return shell(queryForm(page, '請選擇開課學年期及教室：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions(classrooms)}`, 'classroom'));
-  if (page === '班級課表查詢') return shell(queryForm(page, '請選擇開課學年期及班級：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions(['資訊工程學系二年級', '電機工程學系二年級'])}`, 'classSchedule'));
+  if (page === '班級課表查詢') return shell(queryForm(page, '請選擇開課學年期及班級：', `${selectOptions(['115學年度第1學期', '114學年度第2學期'])}${selectOptions(departments.flatMap((department) => ['一年級', '二年級', '三年級', '四年級', '碩士一年級', '碩士二年級', '博士一年級', '博士二年級'].map((grade) => `${department}${grade}`)), '', `${loginContext.department}${loginContext.grade}`)}`, 'classSchedule'));
   if (page === '畢業應修學分課程審核結果查詢') return shell(`<h1 class="course-title">${page}</h1><section class="query-result">${simpleGrid(['審核項目','應修學分','已修學分','審核狀態'], [['校共同必修','28','22','修習中'],['系專業必修','48','21','修習中'],['系選修','24','12','修習中'],['畢業總學分','128','55','尚未達標']])}<p class="small-note">此為 AI 模擬審核結果，正式畢業資格以學校審核為準。</p></section>`);
   if (page === '教學評量教師回覆查詢作業') return shell(noDataPage(page, '目前無教師回覆資料'));
   if (page === '學生預警科目查詢') return shell(noDataPage(page, '目前無預警科目資料'));
@@ -377,8 +526,8 @@ function renderCoursePage(page) {
   if (page === '學生個人獎懲狀況明細表') return shell(queryForm(page, '請選擇年度及學期：', selectOptions(['115學年度第1學期', '114學年度第2學期', '114學年度第1學期']), 'awards'));
   if (page === '學生弱勢助學金資格查詢') return shell(noDataPage(page, '目前無弱勢助學金資格資料'));
   if (page === '兵役申辦查詢') return shell(noDataPage(page, '目前無兵役申辦資料'));
-  if (page === '師生郵件查詢') return shell(`<h1 class="course-title">師生郵件查詢</h1><section class="query-result">${simpleGrid(['類別','電子郵件','說明'], [['學生校務信箱','ai-student@example.edu.tw','展示用帳號'],['系辦公室','cs-office@example.edu.tw','展示用聯絡資訊']])}</section>`);
-  if (page === '教學評量登錄作業') return shell(`<h1 class="course-title">教學評量登錄作業</h1><section class="query-result"><p>115學年度第1學期　教學評量課程清單</p>${simpleGrid(['科目名稱','授課教師','填寫狀態','操作'], activeCourses().slice(0, 4).map((course, i) => [course[1], course[9], i === 0 ? '已完成' : '未開放', '<button class="small-button" data-demo-action>填寫</button>']))}<p class="small-note">展示版不會開啟或儲存問卷。</p></section>`);
+  if (page === '師生郵件查詢') return shell(`<h1 class="course-title">師生郵件查詢</h1><section class="query-result">${simpleGrid(['類別','電子郵件','說明'], [['學生校務信箱','ai-student@example.edu.tw','展示用帳號'],[`${escapeHtml(loginContext.department)}系辦公室`,'department-office@example.edu.tw','展示用聯絡資訊']])}</section>`);
+  if (page === '教學評量登錄作業') return shell(`<h1 class="course-title">教學評量登錄作業</h1><section class="query-result"><p>115學年度第1學期　教學評量課程清單</p>${simpleGrid(['科目名稱','授課教師','填寫狀態','操作'], selectedCourses().slice(0, 4).map((course, i) => [course[1], course[9], i === 0 ? '已完成' : '未開放', '<button class="small-button" data-demo-action>填寫</button>']))}<p class="small-note">展示版不會開啟或儲存問卷。</p></section>`);
   if (page === '問卷調查') return shell(noDataPage(page, '目前無可填寫問卷'));
   if (page === '學生基本資料表') return shell(profilePage());
   if (page === '社員登錄作業') return shell(clubPage('社員登錄作業', '目前未加入任何社團'));
@@ -403,8 +552,8 @@ function programTable(programs) {
   return `<table class="program-table"><thead><tr><th>學程名稱</th><th>資訊</th></tr></thead><tbody>${programs.map((program) => `<tr><td>${program}</td><td><button class="small-button" data-program-info="${program}">點擊下載</button></td></tr>`).join('')}</tbody></table>`;
 }
 
-function selectOptions(options) {
-  return `<select>${options.map((option) => `<option>${option}</option>`).join('')}</select>`;
+function selectOptions(options, attribute = '', selected = options[0]) {
+  return `<select ${attribute}>${options.map((option) => `<option ${option === selected ? 'selected' : ''}>${option}</option>`).join('')}</select>`;
 }
 
 function queryForm(title, prompt, controls, key) {
@@ -415,20 +564,76 @@ function noDataPage(title, message = '目前無資料') {
   return `<h1 class="course-title">${title}</h1><section class="query-result empty-result"><strong>${message}</strong><p>AI 模擬學生資料服務完成後，系統將依登入條件產生對應內容。</p></section>`;
 }
 
-function queryResult(key, condition = '') {
+const historicalRecordCache = new Map();
+function recordForTerm(term) {
+  if (term === '115學年度第1學期') return generatedRecord;
+  if (!historicalRecordCache.has(term)) {
+    const context = { ...loginContext, studentId: `${loginContext.studentId}-${term}`, grade: loginContext.grade };
+    historicalRecordCache.set(term, normalizeRecord(window.NQU_LOCAL.generateStudentRecord(context), context.department, context.grade));
+  }
+  return historicalRecordCache.get(term);
+}
+
+function queryResult(key, filters = []) {
   const title = {
     grades: '學期成績查詢', history: '歷年成績查詢', courses: '選課資料查詢', courseCatalog: '課程資料查詢',
     plan: '課程規劃表', teacher: '教師課表查詢', classroom: '教室課表查詢', classSchedule: '班級課表查詢'
   }[key] || '查詢結果';
-  if (key === 'grades') { const scores = Object.fromEntries((generatedRecord?.grades || []).map((grade) => [grade.courseCode, grade.score])); return `<h1 class="course-title">${title}</h1><section class="query-result"><div class="print-line">115學年度第1學期　　列印日期：115/09/18</div><p>班級：${document.getElementById('student-program').textContent}　　學號：${document.getElementById('student-id').textContent}　　姓名：${document.getElementById('student-name').textContent}</p><p class="small-note">[＊] 表示尚未傳送成績。</p>${simpleGrid(['項次','科目名稱','學分數','授課時數','必選修','學期成績'], activeCourses().slice(0, 22).map((row, i) => [i + 1, row[1], row[5], row[6], `【${row[7]}】`, scores[row[0]] || '＊']))}<p class="summary-line">操行成績：—　　總平均：—　　班名次／班人數：—</p></section>`; }
-  if (key === 'history') return `<h1 class="course-title">${title}</h1><section class="query-result"><p>AI 模擬學生　歷年成績總覽</p>${simpleGrid(['學年期','修習學分','及格學分','學期平均','備註'], [['114學年度第2學期','18','18','82.4','正常'],['115學年度第1學期','17','—','—','成績尚未公告']])}</section>`;
-  if (key === 'courses') return `<h1 class="course-title">${title}</h1><section class="query-result"><p>115學年度第1學期　選課資料</p>${courseTable()}</section>`;
-  if (key === 'courseCatalog') return `<h1 class="course-title">${title}</h1><section class="query-result">${simpleGrid(['開課代號','科目名稱','英文名稱','學分','開課單位','授課教師'], activeCourses().slice(0, 20).map((row) => [row[0],row[1],row[2],row[5],document.getElementById('student-program').textContent,row[9]]))}</section>`;
-  if (key === 'plan') return `<h1 class="course-title">${title}</h1><section class="query-result"><p>資訊工程學系　115學年度入學　課程規劃表（展示）</p>${simpleGrid(['年級','類別','課程名稱','學分','修習狀態'], [['二','系必修','計算機結構','3','已規劃'],['二','系必修','資料庫系統管理','3','已規劃'],['二','系選修','現代程式語言','3','可選修'],['二','通識','生活科技概論','2','已規劃']])}</section>`;
-  if (key === 'teacher') return scheduleResult('教師課表查詢', condition || '吳佳駿');
-  if (key === 'classroom') return scheduleResult('教室課表查詢', condition || 'E320｜E320多媒體實驗室');
-  if (key === 'classSchedule') return scheduleResult('班級課表查詢', condition || '資訊工程學系二年級');
-  if (key === 'attendance') return `<h1 class="course-title">學生個人缺曠請假明細表</h1><section class="query-result">${simpleGrid(['日期','科目名稱','節次','類別','時數','備註'], [['115/09/09','資料庫系統管理','第 3 節','公假','1','展示資料'],['115/09/16','TCP/IP 協定','第 2 節','病假','1','展示資料']])}</section>`;
+  if (key === 'grades') {
+    const term = filters[0] || '115學年度第1學期';
+    const record = recordForTerm(term);
+    const scores = new Map(record.grades.map((grade) => [grade.courseCode, grade.score]));
+    const rows = record.courses.filter((course) => scores.has(course.code)).map(courseRow);
+    return `<h1 class="course-title">${title}</h1><section class="query-result"><div class="print-line">${term}　　列印日期：115/09/18</div><p>班級：${document.getElementById('student-program').textContent}　　學號：${document.getElementById('student-id').textContent}　　姓名：${document.getElementById('student-name').textContent}</p><p class="small-note">[＊] 表示尚未傳送成績。</p>${simpleGrid(['項次','科目名稱','學分數','授課時數','必選修','學期成績'], rows.map((row, i) => [i + 1, row[1], row[5], row[6], `【${row[7]}】`, scores.get(row[0]) || '＊']))}</section>`;
+  }
+  if (key === 'history') {
+    const terms = ['114學年度第1學期', '114學年度第2學期', '115學年度第1學期'];
+    const rows = terms.map((term) => {
+      const record = recordForTerm(term);
+      const numeric = record.grades.map((item) => Number(item.score)).filter(Number.isFinite);
+      const credits = record.courses.filter((course) => record.grades.some((grade) => grade.courseCode === course.code)).reduce((total, course) => total + Number(course.credits), 0);
+      return [term, credits.toFixed(1), `${numeric.filter((score) => score >= 60).length} 門`, numeric.length ? (numeric.reduce((sum, score) => sum + score, 0) / numeric.length).toFixed(1) : '—', '模擬資料'];
+    });
+    return `<h1 class="course-title">${title}</h1><section class="query-result">${simpleGrid(['學年期','修習學分','及格科目','學期平均','備註'], rows)}</section>`;
+  }
+  if (key === 'courses') {
+    const term = filters[0] || '115學年度第1學期';
+    const rows = term === '115學年度第1學期' ? selectedCourses() : recordForTerm(term).courses.filter((course) => course.selected).map(courseRow);
+    return `<h1 class="course-title">${title}</h1><section class="query-result"><p>${term}　選課資料</p>${courseTable('result', rows)}</section>`;
+  }
+  if (key === 'courseCatalog') {
+    const term = filters[0] || '115學年度第1學期';
+    const department = filters[1] || loginContext.department;
+    const grades = filters[2] && filters[2] !== '全部年級' ? [filters[2]] : ['一年級', '二年級', '三年級', '四年級'];
+    const units = department === '全校課程' ? departments : [department];
+    const rows = units.flatMap((unit) => grades.flatMap((grade) => departmentCatalog(unit, grade, term).slice(0, 30).map(courseRow)));
+    return `<h1 class="course-title">${title}</h1><section class="query-result"><p>${filters.join('／')}　共 ${rows.length} 門課</p>${simpleGrid(['開課代號','科目名稱','英文名稱','年級','學分','開課單位','授課教師'], rows.map((row) => [row[0], row[1], row[2], row[3], row[5], row[17], row[9]]))}</section>`;
+  }
+  if (key === 'plan') {
+    const department = filters[0] || loginContext.department;
+    const rows = ['一年級', '二年級', '三年級', '四年級'].flatMap((grade) => departmentCatalog(department, grade).slice(0, 8).map((course) => [grade, course.requiredType, course.name, course.credits, '課程規劃']));
+    return `<h1 class="course-title">${title}</h1><section class="query-result"><p>${department}　${filters[1] || '115學年度入學'}　課程規劃表</p>${simpleGrid(['年級','類別','課程名稱','學分','狀態'], rows)}</section>`;
+  }
+  if (key === 'teacher') {
+    const term = filters[0] || '115學年度第1學期';
+    const department = filters[1] || loginContext.department;
+    const teacher = filters[2] || facultyFor(department)[0];
+    return scheduleResult(title, `${term}／${department}／${teacher}`, departmentCatalog(department, loginContext.grade, term).map(courseRow).filter((course) => course[9] === teacher));
+  }
+  if (key === 'classroom') {
+    const term = filters[0] || '115學年度第1學期';
+    const room = (filters[1] || '').split('｜')[1] || filters[1];
+    const rows = departments.flatMap((department) => departmentCatalog(department, loginContext.grade, term).map(courseRow)).concat(term === '115學年度第1學期' ? sharedCourses.map(courseRow) : []).filter((course) => course[10] === room);
+    return scheduleResult(title, filters[1], rows);
+  }
+  if (key === 'classSchedule') {
+    const term = filters[0] || '115學年度第1學期';
+    const value = filters[1] || `${loginContext.department}${loginContext.grade}`;
+    const department = departments.find((item) => value.startsWith(item)) || loginContext.department;
+    const grade = value.slice(department.length) || loginContext.grade;
+    return scheduleResult(title, `${term}／${value}`, departmentCatalog(department, grade, term).map(courseRow));
+  }
+  if (key === 'attendance') return noDataPage('學生個人缺曠請假明細表', '目前無缺曠請假資料');
   if (key === 'awards') return `<h1 class="course-title">學生個人獎懲狀況明細表</h1><section class="query-result empty-result"><strong>目前無獎懲資料</strong><p>AI 模擬學生資料服務完成後將依條件產生資料。</p></section>`;
   return noDataPage(title);
 }
@@ -437,101 +642,137 @@ function simpleGrid(headers, rows) {
   return `<div class="table-wrap"><table class="query-grid"><thead><tr>${headers.map((header) => `<th>${header}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
-function scheduleResult(title, subject) {
-  if (title === '我的課表') return studentSchedule();
-  return `<h1 class="course-title">${title}</h1><section class="query-result"><p>查詢條件：${subject}</p>${simpleGrid(['節次／時間','星期一','星期二','星期三','星期四','星期五'], [['第 1 節','', '','', '',''],['第 2 節','', '現代程式語言','TCP/IP 協定','',''],['第 3 節','資料庫系統管理','現代程式語言','TCP/IP 協定','計算機結構',''],['第 4 節','資料庫系統管理','','TCP/IP 協定','計算機結構',''],['第 5 節','','','','','現代軟體工程']])}</section>`;
+function scheduleResult(title, subject = '', rows = selectedCourses()) {
+  const days = ['一', '二', '三', '四', '五'];
+  const slots = [1, 3, 5, 7, 9, 11];
+  const grid = Object.fromEntries(days.map((day) => [day, Object.fromEntries(slots.map((slot) => [slot, []]))]));
+  rows.forEach((course) => {
+    const match = /^\(([一二三四五])\)(\d+)-(\d+)$/.exec(course[11]);
+    if (!match) return;
+    const [, day, startText, endText] = match;
+    const start = Number(startText);
+    const end = Number(endText);
+    slots.filter((slot) => start <= slot + 1 && end >= slot).forEach((slot) => {
+      grid[day][slot].push(`${course[1]}<br><small>${course[9]}／${course[10]}</small>`);
+    });
+  });
+  const cells = slots.map((slot) => [`第 ${slot}-${slot + 1} 節`, ...days.map((day) => grid[day][slot].join('<hr>'))]);
+  const heading = title === '我的課表' ? `本學期已選 ${selectedCourses().length} 門課，共 ${selectedCredits().toFixed(1)} 學分。` : `查詢條件：${subject}，共 ${rows.length} 門課。`;
+  return `<h1 class="course-title">${title}</h1><section class="query-result"><p>${heading}</p>${simpleGrid(['節次／時間', ...days.map((day) => `星期${day}`)], cells)}</section>`;
 }
 
 function studentSchedule() {
-  const days = ['一', '二', '三', '四', '五'];
-  const slots = Array.from({ length: 6 }, (_, index) => `${index * 2 + 1}-${index * 2 + 2}`);
-  const grid = Object.fromEntries(days.map((day) => [day, {}]));
-  selectedCourses().forEach((course) => {
-    const match = /^\((.)\)(\d+)-(\d+)$/.exec(course[11]);
-    if (!match || !grid[match[1]]) return;
-    const label = `${course[1]}<br><small>${course[9]}／${course[10]}</small>`;
-    grid[match[1]][`${match[2]}-${match[3]}`] = label;
-  });
-  const rows = slots.map((slot) => [`第 ${slot} 節`, ...days.map((day) => grid[day][slot] || '')]);
-  return `<h1 class="course-title">我的課表</h1><section class="query-result"><p>本學期已選 ${selectedCourses().length} 門課，共 ${selectedCredits().toFixed(1)} 學分。</p>${simpleGrid(['節次／時間', ...days.map((day) => `星期${day}`)], rows)}</section>`;
+  return scheduleResult('我的課表');
 }
 
 function profilePage() {
-  return `<h1 class="course-title">學生基本資料表</h1><section class="profile-card"><h2>基本資料</h2><div class="profile-grid"><label>姓名<input value="AI 模擬學生" readonly></label><label>學號<input value="AI115410001" readonly></label><label>系所<input value="資訊工程學系" readonly></label><label>年級<input value="二年級" readonly></label><label>電子郵件<input value="ai-student@example.edu.tw" readonly></label><label>聯絡電話<input value="資料服務啟用後產生" readonly></label></div><p class="small-note">本頁為展示資料；資料服務啟用後將由 AI 產生虛構且不識別個人的內容。</p></section>`;
+  const fields = [['姓名', loginContext.studentName], ['學號', loginContext.studentId], ['系所', loginContext.department], ['年級', loginContext.grade], ['學制', loginContext.level === 'master' ? '碩士班' : loginContext.level === 'doctoral' ? '博士班' : '大學部']];
+  return `<h1 class="course-title">學生基本資料表</h1><section class="profile-card"><h2>基本資料</h2><div class="profile-grid">${fields.map(([label, value]) => `<label>${label}<input value="${escapeHtml(value)}" readonly></label>`).join('')}</div><p class="small-note">此頁只顯示登入時填寫的展示身分。</p></section>`;
 }
 
 function clubPage(title, message) {
   return `<h1 class="course-title">${title}</h1><section class="query-result empty-result"><strong>${message}</strong><p>展示版不會進行登錄、維護或送出活動資料。</p></section>`;
 }
 
-document.querySelectorAll('.tree-menu li button').forEach((button) => {
+let currentAddCategory = '一般課程';
+let currentAddFilters = {};
+function openPage(page) {
+  const coursePage = renderCoursePage(page);
+  contentPanel.innerHTML = coursePage || `<div class="breadcrumb">首頁　&gt;　${page}</div><section class="empty-page"><h1>${page}</h1><p>此功能版型已建立。</p><button id="back-home" class="back-home">回到系統公告</button></section>`;
+}
+
+function coursesOverlap(first, second) {
+  const matchA = /^\((.)\)(\d+)-(\d+)$/.exec(first[11]);
+  const matchB = /^\((.)\)(\d+)-(\d+)$/.exec(second[11]);
+  return Boolean(matchA && matchB && matchA[1] === matchB[1] && Number(matchA[2]) <= Number(matchB[3]) && Number(matchB[2]) <= Number(matchA[3]));
+}
+
+document.querySelectorAll('.tree-menu [data-page]').forEach((button) => {
   button.addEventListener('click', () => {
-    const item = button.parentElement;
     document.querySelectorAll('.tree-menu li').forEach((node) => node.classList.remove('active'));
-    item.classList.add('active');
-    const page = button.dataset.page;
-    const coursePage = renderCoursePage(page);
-    contentPanel.innerHTML = coursePage || `<div class="breadcrumb">首頁　&gt;　${page}</div><section class="empty-page"><h1>${page}</h1><p>此功能版型已建立。</p><p>目前尚未載入 AI 生成的學生資料，資料服務建置後將在此顯示對應內容。</p><button id="back-home" class="back-home">回到系統公告</button></section>`;
-    contentPanel.querySelectorAll('[data-view-add]').forEach((control) => control.addEventListener('click', () => {
-      const selection = Array.from(control.closest('tr')?.querySelectorAll('select') || []).map((select) => select.options[select.selectedIndex].text).join('／');
-      contentPanel.innerHTML = renderAddCourseList(control.dataset.viewAdd, selection);
-      bindCoursePreviewControls();
-    }));
-    contentPanel.querySelectorAll('[data-view-result]').forEach((control) => control.addEventListener('click', () => { contentPanel.innerHTML = renderResultList(); }));
-    bindCoursePreviewControls();
-    document.getElementById('back-home')?.addEventListener('click', () => {
-      contentPanel.innerHTML = homepage;
-      document.querySelectorAll('.tree-menu li').forEach((node) => node.classList.remove('active'));
-    });
+    button.parentElement.classList.add('active');
+    openPage(button.dataset.page);
   });
 });
 
-function bindCoursePreviewControls() {
-  contentPanel.querySelectorAll('[data-add-back]').forEach((control) => control.addEventListener('click', () => { contentPanel.innerHTML = renderCoursePage('線上加選作業'); bindCoursePreviewControls(); }));
-  contentPanel.querySelectorAll('[data-demo-action]').forEach((control) => control.addEventListener('click', () => alert('展示版不會送出、加選或退選任何課程。')));
-  contentPanel.querySelectorAll('[data-commit-add]').forEach((control) => control.addEventListener('click', () => {
-    const codes = Array.from(contentPanel.querySelectorAll('[data-course-choice]:checked')).map((input) => input.dataset.courseChoice);
+contentPanel.addEventListener('change', (event) => {
+  if (event.target.matches('[data-teacher-department]')) {
+    const teacherSelect = contentPanel.querySelector('[data-teacher-name]');
+    teacherSelect.innerHTML = facultyFor(event.target.value).map((teacher) => `<option>${teacher}</option>`).join('');
+  } else if (event.target.matches('[aria-label="學制"]')) {
+    const gradeSelect = contentPanel.querySelector('[aria-label="年級"]');
+    const count = event.target.value.includes('博士') ? 6 : event.target.value.includes('碩士') ? 4 : 5;
+    const previous = Math.min(count, Number(gradeSelect.value) || 1);
+    gradeSelect.innerHTML = Array.from({ length: count }, (_, index) => `<option ${index + 1 === previous ? 'selected' : ''}>${index + 1}</option>`).join('');
+  }
+});
+
+contentPanel.addEventListener('click', (event) => {
+  const control = event.target.closest('button');
+  if (!control) return;
+  if (control.id === 'back-home') {
+    contentPanel.innerHTML = homepage;
+    document.querySelectorAll('.tree-menu li').forEach((node) => node.classList.remove('active'));
+  } else if (control.hasAttribute('data-view-add')) {
+    currentAddCategory = control.dataset.viewAdd;
+    const row = control.closest('tr');
+    currentAddFilters = currentAddCategory === '通識課程'
+      ? { field: row.querySelector('select').value }
+      : currentAddCategory === '一般課程'
+        ? { program: row.querySelector('[aria-label="學制"]').value, department: row.querySelector('[aria-label="系所"]').value, grade: row.querySelector('[aria-label="年級"]').value }
+        : {};
+    contentPanel.innerHTML = renderAddCourseList(currentAddCategory, currentAddFilters);
+  } else if (control.hasAttribute('data-add-back')) {
+    openPage('線上加選作業');
+  } else if (control.hasAttribute('data-commit-add')) {
+    const codes = Array.from(contentPanel.querySelectorAll('[data-course-choice]:checked:not(:disabled)')).map((input) => input.dataset.courseChoice);
     const messages = [];
     codes.forEach((code) => {
       const course = findCourse(code);
       if (!course || selectedCourseCodes.has(code)) return;
-      if (course[15] === '額滿') { messages.push(`${course[1]}：額滿，無法加選`); return; }
-      const conflict = selectedCourses().find((selected) => selected[11] === course[11]);
-      if (conflict) { messages.push(`${course[1]}：與「${conflict[1]}」時間衝堂`); return; }
-      if (selectedCredits() + Number(course[5]) > 25) { messages.push(`${course[1]}：加選後超過 25 學分上限`); return; }
+      if (course[15] === '額滿') { messages.push(`${course[1]}：額滿`); return; }
+      const conflict = selectedCourses().find((selected) => coursesOverlap(selected, course));
+      if (conflict) { messages.push(`${course[1]}：與「${conflict[1]}」衝堂`); return; }
+      if (selectedCredits() + Number(course[5]) > 25) { messages.push(`${course[1]}：超過 25 學分上限`); return; }
       selectedCourseCodes.add(code);
+      selectionTouched = true;
       messages.push(`${course[1]}：已加選`);
     });
-    const title = contentPanel.querySelector('.course-title')?.textContent || '';
-    const category = title.includes('通識') ? '通識課程' : title.includes('體育') ? '體育課程' : title.includes('國文') ? '大學國文' : title.includes('英文') ? '大學英文' : '一般課程';
-    alert(messages.length ? messages.join('\n') : '未選擇任何可加選課程。');
-    contentPanel.innerHTML = renderAddCourseList(category);
-    bindCoursePreviewControls();
-  }));
-  contentPanel.querySelectorAll('[data-commit-withdraw]').forEach((control) => control.addEventListener('click', () => {
+    contentPanel.innerHTML = renderAddCourseList(currentAddCategory, currentAddFilters);
+    contentPanel.querySelector('.selection-feedback').textContent = messages.length ? messages.join('；') : '請先勾選可加選的課程。';
+  } else if (control.hasAttribute('data-commit-withdraw')) {
     const codes = Array.from(contentPanel.querySelectorAll('[data-course-choice]:checked')).map((input) => input.dataset.courseChoice);
-    if (!codes.length) { alert('請先勾選要退選的課程。'); return; }
-    codes.forEach((code) => selectedCourseCodes.delete(code));
-    alert(`已退選 ${codes.length} 門課程；選課結果與我的課表已同步更新。`);
-    contentPanel.innerHTML = renderCoursePage('線上退選作業');
-    bindCoursePreviewControls();
-  }));
-  contentPanel.querySelectorAll('[data-rule-confirm]').forEach((control) => control.addEventListener('click', () => {
+    if (codes.length) {
+      codes.forEach((code) => selectedCourseCodes.delete(code));
+      selectionTouched = true;
+    }
+    openPage('線上退選作業');
+    contentPanel.querySelector('.submit-row').insertAdjacentHTML('afterend', `<p class="selection-feedback" role="status">${codes.length ? `已退選 ${codes.length} 門課，選課結果與課表已同步更新。` : '請先勾選要退選的課程。'}</p>`);
+  } else if (control.hasAttribute('data-view-result')) {
+    contentPanel.innerHTML = renderResultList();
+  } else if (control.hasAttribute('data-rule-confirm')) {
     const page = control.dataset.ruleName;
-    contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　${page}</div><h1 class="course-title">${page}</h1><div class="rule-status"><strong>目前尚無可申請資料</strong><p>此展示版尚未串接 AI 模擬學生資料；按下確認不會建立任何申請。</p><button class="small-button" data-rule-back="${page}">回申請規則</button></div></div>`;
-    bindCoursePreviewControls();
-  }));
-  contentPanel.querySelectorAll('[data-rule-back]').forEach((control) => control.addEventListener('click', () => {
-    contentPanel.innerHTML = renderCoursePage(control.dataset.ruleBack);
-    bindCoursePreviewControls();
-  }));
-  contentPanel.querySelectorAll('[data-program-info]').forEach((control) => control.addEventListener('click', () => alert(`「${control.dataset.programInfo}」的展示文件尚未載入。`)));
-  contentPanel.querySelectorAll('[data-show-query]').forEach((control) => control.addEventListener('click', () => {
-    const condition = Array.from(control.parentElement.querySelectorAll('select')).map((select) => select.options[select.selectedIndex].text).join('／');
-    contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　查詢　&gt;　查詢結果</div>${queryResult(control.dataset.showQuery, condition)}</div>`;
-    bindCoursePreviewControls();
-  }));
-}
+    contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　${page}</div><h1 class="course-title">${page}</h1><div class="rule-status"><strong>目前尚無可申請資料</strong><p>此展示版的確認不會建立申請。</p><button class="small-button" data-rule-back="${page}">回申請規則</button></div></div>`;
+  } else if (control.hasAttribute('data-rule-back')) {
+    openPage(control.dataset.ruleBack);
+  } else if (control.hasAttribute('data-program-info')) {
+    const program = control.dataset.programInfo;
+    contentPanel.innerHTML = `<div class="course-page"><h1 class="course-title">${escapeHtml(program)}</h1><section class="query-result"><p>此學程為模擬展示資訊。修習科目與申請條件依開課單位公告為準。</p><button class="small-button" data-program-back>回學分學程資訊</button></section></div>`;
+  } else if (control.hasAttribute('data-program-back')) {
+    openPage('學分學程資訊');
+  } else if (control.hasAttribute('data-show-query')) {
+    const form = control.closest('.filter-row');
+    const filters = Array.from(form.querySelectorAll('select')).map((select) => select.value);
+    const page = contentPanel.querySelector('.course-title')?.textContent || '查詢結果';
+    contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　查詢　&gt;　${page}</div><button class="small-button" data-query-back="${page}">回查詢條件</button>${queryResult(control.dataset.showQuery, filters)}</div>`;
+  } else if (control.hasAttribute('data-query-back')) {
+    openPage(control.dataset.queryBack);
+  } else if (control.hasAttribute('data-demo-action')) {
+    control.insertAdjacentHTML('afterend', '<span class="small-note" role="status">此展示版不會儲存或送出資料。</span>');
+  } else if (control.hasAttribute('data-password-clear')) {
+    contentPanel.querySelectorAll('input').forEach((input) => { input.value = ''; });
+  }
+});
 
 document.getElementById('toggle-menu').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('hidden-menu');
@@ -539,8 +780,6 @@ document.getElementById('toggle-menu').addEventListener('click', () => {
 
 document.getElementById('change-password').addEventListener('click', () => {
   contentPanel.innerHTML = `<div class="course-page password-page"><h1 class="course-title">修改密碼作業</h1><section class="password-panel"><label>新密碼：<input type="password" placeholder="展示版不會保存"></label><label>確認密碼：<input type="password" placeholder="再次輸入新密碼"></label><p>密碼需包含大小寫英文、數字與標點至少三項，長度最多 10 碼。</p><div><button class="small-button" data-demo-action>確定送出</button><button class="small-button" data-password-clear>清除重填</button></div></section></div>`;
-  bindCoursePreviewControls();
-  contentPanel.querySelector('[data-password-clear]')?.addEventListener('click', () => contentPanel.querySelectorAll('input').forEach((input) => { input.value = ''; }));
 });
 document.getElementById('logout').addEventListener('click', () => {
   appShell.hidden = true;

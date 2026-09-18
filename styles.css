@@ -87,6 +87,9 @@ tbody td:nth-child(2) { width:26%; text-align:center; font-weight:700; }
 .course-grid tr.is-full td:first-child, .course-grid tr.is-full td:last-child { color:#e00000; font-weight:700; }
 .course-grid tr.is-full input { cursor:not-allowed; }
 .submit-row { display:flex; justify-content:space-between; align-items:center; margin:8px 0; }
+.selection-feedback { min-height:1.5em; margin:4px 0 8px; color:#075b21; font:700 15px/1.5 "Noto Sans TC",sans-serif; }
+.selection-summary { margin:6px 0; color:#304568; font:15px/1.5 "Noto Sans TC",sans-serif; }
+.demo-badge { position:absolute; z-index:2; left:5px; bottom:3px; padding:2px 5px; color:#fff; background:#19345e9e; border:1px solid #fff8; font:12px "Noto Sans TC",sans-serif; white-space:nowrap; }
 .student-line { display:flex; justify-content:space-between; margin:9px 0 4px; font-size:16px; }
 .total-line { font-weight:700; margin:6px 0; }
 .closed-page { min-height:390px; display:grid; place-items:center; color:#e01616; font:500 25px "Noto Serif TC",serif; }
