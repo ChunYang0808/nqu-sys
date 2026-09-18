@@ -15,7 +15,8 @@ window.NQU_AI = {
       classrooms: context.classrooms
     };
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 30000);
+    // Gemini 需生成 54 門課程的命名資料；保留緩衝避免偶發延遲時過早回退至本機展示資料。
+    const timeout = window.setTimeout(() => controller.abort(), 45000);
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -33,3 +34,4 @@ window.NQU_AI = {
     }
   }
 };
+
