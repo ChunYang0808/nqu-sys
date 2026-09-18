@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>國立金門大學｜校務資訊系統</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="login-screen" id="login-screen" aria-labelledby="login-title">
+      <div class="login-banner">
+        <div class="login-logo-slot">LOGO / 校園橫幅圖片預留欄位<img src="logo.png" alt="國立金門大學" onerror="this.style.display='none'" /></div>
+      </div>
+      <div class="login-box">
+        <h1 id="login-title">歡迎使用　校務行政資訊系統</h1>
+        <p class="online-count">目前線上人數：<span>31</span></p>
+        <form id="login-form" class="login-form">
+          <div class="login-mark">NQU</div>
+          <label>帳號 <input id="login-id" required autocomplete="username" placeholder="可任意輸入學號" /></label>
+          <label>密碼 <input id="login-password" type="password" required autocomplete="current-password" placeholder="展示版不驗證" /></label>
+          <label>姓名 <input id="login-name" required placeholder="請輸入姓名" /></label>
+          <label>系所 <select id="login-department" required></select></label>
+          <label>學制 <select id="login-level"><option value="bachelor">大學部</option><option value="master">碩士班</option><option value="doctoral">博士班</option></select></label>
+          <label>年級 <select id="login-grade"></select></label>
+          <div class="login-actions"><button type="submit">確定送出</button><button type="reset">清除重填</button></div>
+        </form>
+        <p class="login-note">此為前端展示版：帳號與密碼不會驗證、不會保存；登入後將依您填寫的資料建立模擬學生身分。</p>
+      </div>
+    </section>
+
+    <div id="app-shell" hidden>
+    <header class="site-header">
+      <button class="utility-button" id="change-password">修改密碼</button>
+      <button class="utility-button" id="toggle-menu">隱藏選單</button>
+
+      <!-- 將 logo.png 換成您日後提供的校徽或橫幅圖片即可。 -->
+      <div class="logo-slot" aria-label="校務系統 Logo 預留位置">
+        <span class="logo-hint">LOGO / 校園橫幅圖片預留欄位</span>
+        <img src="logo.png" alt="國立金門大學校務資訊系統" onerror="this.style.display='none'" />
+      </div>
+
+      <div class="student-summary">
+        <strong id="semester-label">115學年度第1學期</strong>
+        <span id="student-program">資工二</span>
+        <span id="student-id">AI115410001</span>
+        <span id="student-name">AI 模擬學生</span>
+        <button class="logout" id="logout">登　出</button>
+      </div>
+    </header>
+
+    <main class="system-layout">
+      <aside class="sidebar" id="sidebar">
+        <nav class="tree-menu" aria-label="校務功能選單">
+          <section><h2>▾ <span>📚</span> 選課作業</h2><ul>
+            <li class="branch"><button class="branch-button">▾ 📚 學生網路選課</button><ul>
+              <li><button data-page="線上加選作業">線上加選作業</button></li><li><button data-page="線上退選作業">線上退選作業</button></li><li><button data-page="選課結果查詢">選課結果查詢</button></li><li><button data-page="停修申請">停修申請</button></li><li><button data-page="通識選課初選作業">通識選課初選作業</button></li><li><button data-page="人工加選申請">人工加選申請</button></li><li><button data-page="超修學分申請">超修學分申請</button></li><li><button data-page="酌減學分申請">酌減學分申請</button></li><li><button data-page="學分學程資訊">學分學程資訊</button></li>
+            </ul></li></ul></section>
+          <section><h2>▾ <span>📁</span> 查詢</h2><ul>
+            <li class="branch"><button class="branch-button">▾ 📚 教務資訊查詢</button><ul><li><button data-page="學期成績查詢">學期成績查詢</button></li><li><button data-page="學生期中預警查詢">學生期中預警查詢</button></li><li><button data-page="歷年成績查詢">歷年成績查詢</button></li><li><button data-page="選課資料查詢">選課資料查詢</button></li><li><button data-page="抵免科目查詢">抵免科目查詢</button></li><li><button data-page="課程資料查詢">課程資料查詢</button></li><li><button data-page="課程規劃表">課程規劃表</button></li><li><button data-page="我的課表">我的課表</button></li><li><button data-page="教師課表查詢">教師課表查詢</button></li><li><button data-page="教室課表查詢">教室課表查詢</button></li><li><button data-page="班級課表查詢">班級課表查詢</button></li><li><button data-page="畢業應修學分課程審核結果查詢">畢業應修學分課程審核結果查詢</button></li><li><button data-page="教學評量教師回覆查詢作業">教學評量教師回覆查詢作業</button></li><li><button data-page="學生預警科目查詢">學生預警科目查詢</button></li><li><button data-page="離校審核查詢">離校審核查詢</button></li></ul></li>
+            <li class="branch"><button class="branch-button">▾ 📚 跨域修習專區</button><ul><li><button data-page="微學程修習結果查詢">微學程修習結果查詢</button></li><li><button data-page="跨領域學程修習結果查詢">跨領域學程修習結果查詢</button></li><li><button data-page="輔系雙主修修習結果查詢">輔系雙主修修習結果查詢</button></li></ul></li>
+            <li class="branch"><button class="branch-button">▾ 📚 學務資訊查詢</button><ul><li><button data-page="學生個人缺曠請假明細表">學生個人缺曠請假明細表</button></li><li><button data-page="學生個人獎懲狀況明細表">學生個人獎懲狀況明細表</button></li><li><button data-page="學生弱勢助學金資格查詢">學生弱勢助學金資格查詢</button></li><li><button data-page="兵役申辦查詢">兵役申辦查詢</button></li><li><button data-page="師生郵件查詢">師生郵件查詢</button></li></ul></li>
+          </ul></section>
+          <section><h2>▾ <span>📁</span> 登錄</h2><ul><li class="branch"><button class="branch-button">▾ 📚 教務登錄作業</button><ul><li><button data-page="教學評量登錄作業">教學評量登錄作業</button></li><li><button data-page="問卷調查">問卷調查</button></li></ul></li><li class="branch"><button class="branch-button">▾ 📚 學務登錄作業</button><ul><li><button data-page="學生基本資料表">學生基本資料表</button></li><li><button data-page="社員登錄作業">社員登錄作業</button></li><li><button data-page="社團資料維護作業">社團資料維護作業</button></li><li><button data-page="學期預計活動登錄作業">學期預計活動登錄作業</button></li><li><button data-page="活動申請登錄作業">活動申請登錄作業</button></li></ul></li></ul></section>
+          <section><h2>▾ <span>📚</span> 申請</h2><ul><li class="branch"><button class="branch-button">▾ 📚 教務申請作業</button><ul><li><button data-page="科目學分抵免申請">科目學分抵免申請</button></li><li><button data-page="休退學申請作業">休退學申請作業</button></li><li><button data-page="復學申請作業">復學申請作業</button></li></ul></li><li class="branch"><button class="branch-button">▾ 📚 學務申請作業</button><ul><li><button data-page="校內宿舍申請">校內宿舍申請</button></li><li><button data-page="學生請假作業">學生請假作業</button></li><li><button data-page="弱勢助學補助申請作業">弱勢助學補助申請作業</button></li><li><button data-page="學雜費減免申請作業">學雜費減免申請作業</button></li></ul></li></ul></section>
+        </nav>
+      </aside>
+
+      <article class="content-panel" id="content-panel">
+        <div class="notice-banner">115 學年度起 學期成績單全面以電子查詢公告</div>
+        <p class="lead">1. 本校自115學年度第1學期起，為響應無紙化校園政策，不再寄發紙本成績通知單。</p>
+        <p class="lead">2. 學生可於校務資訊系統查詢學期成績、選課結果及個人校務資料。</p>
+        <p class="lead">3. 查詢路徑：<strong>查詢 → 教務資訊查詢 → 【學期成績查詢】</strong></p>
+
+        <hr />
+        <section class="announcement">
+          <h1>國立金門大學</h1>
+          <h2>115 學年度第 1 學期日間部選課注意事項</h2>
+          <p>一、選課操作說明請至「教務處網站／常用資訊／選課專區」下載，並可登入「校務資訊系統」進行課程查詢作業。選課期間請注意學校網站公告欄及各相關開課單位公告。</p>
+          <ol>
+            <li>學校網址：https://www.nqu.edu.tw/</li>
+            <li>校務資訊系統網址：請依校內公告登入。</li>
+            <li>選課前請詳閱各系所課程規劃及修課規定。</li>
+          </ol>
+          <p>二、注意事項：</p>
+          <ol>
+            <li>學生選課須依本校學則、選課須知、當學期選課注意事項及各學院、通識教育中心、體育室、系（所）規定辦理；所有選課相關規定請詳加閱讀，並應親自準時辦理選課，以免自身權益受損。</li>
+            <li>依本校「選課須知」，學生每學期修習學分須符合下列規定：大學部一至三年級不得少於十六學分，不得多於二十五學分；大學部四年級不得少於九學分，不得多於二十五學分。</li>
+            <li><strong>如忘記密碼，請持學生證至計算機與網路中心查詢，並務必修改密碼後再進行選課，以免選課資料遭人竄改。</strong></li>
+            <li>應屆畢業生選課時，應特別注意核算畢業總學分及應修之必修課程是否不足或遺漏，以符合畢業資格。</li>
+            <li>學生於加退選結束後，如有無法繼續修習之課程，可於第十二週結束前辦理課程停修。</li>
+            <li class="important">同學於各階段選課時應善盡個人責任，應於加退選後，於線上「選課結果」及「我的課表」確認當學期課程。</li>
+            <li>因選課、退選、學分不足、有註冊無選課或不符合修課資格等情形，至遲應於加退選截止日前自行上網修正。</li>
+            <li>碩士班學生僅修論文或提前申請學位考試需求者，仍應於「初選」或「加退選」選課階段自行上網加選「學位論文」。</li>
+            <li><strong>105學年度前入學學生應修習4門必修體育課程；105學年度後（含）入學學生應修習2門必修體育課程。</strong></li>
+            <li>延修生、研究生須待所有選課階段結束後，才可於台灣銀行網站列印繳費單，並請依規定時間完成繳費。</li>
+            <li>目前本校校務系統主要支援 Google Chrome 瀏覽器。</li>
+          </ol>
+          <p class="help-line">若選課期間遇到問題，應於選課期限內向教務處課務組提出（電話：313323、313325、313524），本組將立即為您處理。</p>
+          <p>三、各階段選課相關時程及規則如下：</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>類別</th><th>時程</th><th>規則說明</th></tr></thead>
+            <tbody>
+              <tr><th>跨校通識數位課程<br>（原磨課師）</th><td>依通識教育中心公告</td><td>報名事宜請洽通識教育中心。</td></tr>
+              <tr><th>在校生<br>通識志願選課</th><td>115 年 7 月 6 日（一）09:00<br>至<br>115 年 7 月 8 日（三）21:00</td><td>本學期須先填完「教學評量」才能進行選課。每位學生可依志願選填通識課程，選填時請注意所選課程是否與班上排定之必修課衝堂。</td></tr>
+              <tr><th>通識志願選課<br>結果公告</th><td>115 年 7 月 10 日（五）</td><td>請務必上網查詢篩選結果。</td></tr>
+              <tr><th>在校生<br>專業必選修、共同必修課程選課</th><td>依年級分階段辦理</td><td><strong>系統僅預先帶入學生「必修」課程；但設定限修條件之必修課程，系統無預先帶入，請同學自行加選課程。</strong></td></tr>
+              <tr><th>在校生<br>跨院系選課</th><td>依年級分階段辦理</td><td>可跨班、跨系、跨院選課，限日間部學制課程。</td></tr>
+              <tr><th>新生、轉學生、復學生、延修生選課</th><td>115 年 9 月 2 日（三）09:00<br>至<br>115 年 9 月 4 日（五）21:00</td><td>當學期新生（當學期轉學生、復學生、延修生）初選，可跨班選課。</td></tr>
+              <tr><th>特定條件申請</th><td>115 年 8 月 31 日（一）09:00<br>至<br>115 年 9 月 11 日（五）17:00</td><td>人工加退選、酌減學分及超修學分申請，應依規定檢具資料並於截止時間前繳交。</td></tr>
+            </tbody>
+          </table></div>
+        </section>
+      </article>
+    </main>
+    </div>
+    <div class="generation-overlay" id="generation-overlay" hidden role="status" aria-live="polite">
+      <div><span class="loading-mark"></span><strong>正在建立 AI 模擬校務資料…</strong><p>課程、成績、課表與公告將依登入條件生成。</p></div>
+    </div>
+    <script src="ai-config.js"></script>
+    <script src="local-generator.js"></script>
+    <script src="ai-client.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
