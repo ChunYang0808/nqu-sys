@@ -217,9 +217,11 @@ loginForm.addEventListener('submit', async (event) => {
   initializeSelections();
   const overlay = document.getElementById('generation-overlay');
   overlay.hidden = false;
+  overlay.style.display = 'grid';
   // 本機資料已可立即使用；AI 請求只在背景替換資料，絕不能卡住登入畫面。
   // 此保護計時器在發起任何請求前建立，即使供應商逾時或程式同步失敗也會關閉遮罩。
-  const overlayFailSafe = window.setTimeout(() => { overlay.hidden = true; }, 15000);
+  const hideOverlay = () => { overlay.hidden = true; overlay.style.display = 'none'; };
+  const overlayFailSafe = window.setTimeout(hideOverlay, 15000);
   Promise.resolve()
     .then(() => window.NQU_AI.generateStudentRecord(generationContext))
     .then((record) => {
@@ -233,7 +235,7 @@ loginForm.addEventListener('submit', async (event) => {
     })
     .finally(() => {
       window.clearTimeout(overlayFailSafe);
-      overlay.hidden = true;
+      hideOverlay();
     });
 });
 
@@ -550,5 +552,5 @@ document.getElementById('logout').addEventListener('click', () => {
 // 獨立於資料產生流程的最後保護：任何登入載入遮罩最多只顯示 15 秒。
 const loadingOverlay = document.getElementById('generation-overlay');
 new MutationObserver(() => {
-  if (!loadingOverlay.hidden) window.setTimeout(() => { loadingOverlay.hidden = true; }, 15000);
+  if (!loadingOverlay.hidden) window.setTimeout(() => { loadingOverlay.hidden = true; loadingOverlay.style.display = 'none'; }, 15000);
 }).observe(loadingOverlay, { attributes: true, attributeFilter: ['hidden'] });
