@@ -36,11 +36,12 @@ function buildRecord(seed, context) {
   const teachers = context.department === '資訊工程學系' && context.csFaculty.length ? context.csFaculty : givenNames.map((given, index) => `${surnames[(index + offset) % surnames.length]}${given}`);
   const generalTeachers = ['林知遠', '陳映彤', '王書庭', '李嘉恩', '張語晴', '黃柏鈞', '許欣然', '鄭思齊'];
   const rooms = context.classrooms.length ? context.classrooms : ['E318｜智慧計算實驗室', 'I101｜圖資電腦教室', 'E202｜理工大樓教室'];
-  const times = ['(一)1-2', '(二)1-2', '(三)1-2', '(四)1-2', '(五)1-2', '(一)3-4', '(二)3-4', '(三)3-4', '(四)3-4', '(五)3-4'];
+  const times = ['一', '二', '三', '四', '五'].flatMap(day => [1, 3, 5, 7, 9, 11].map(slot => `(${day})${slot}-${slot + 1}`));
+  const selectedSlots = [0, 7, 14, 21, 28, 11, 18];
   const selectedIndexes = new Set([0, 1, 2, 3, 4, 5, 6]);
   const courses = data.courses.map((seedCourse, i) => {
     const selected = selectedIndexes.has(i); const capacity = i % 9 === 0 ? 45 : 50; const enrolled = i % 7 === 0 ? capacity : 12 + (i * 3 % (capacity - 12));
-    return { code: `${i < 30 ? `D${String(offset + 1).padStart(2, '0')}` : 'GE'}${String(i + 1).padStart(3, '0')}`, name: seedCourse.name, englishName: seedCourse.englishName, className: i < 30 ? `${context.department}${context.grade}` : '日大學通識', group: String((i % 2) + 1).padStart(2, '0'), credits: i < 30 ? '3.0' : '2.0', requiredType: seedCourse.requiredType, teacher: i < 30 ? teachers[i % teachers.length] : generalTeachers[i % generalTeachers.length], classroom: rooms[i % rooms.length], time: selected ? times[i] : times[(i * 3 + 2) % times.length], hours: i < 30 ? '3.0' : '2.0', semesterType: '學期', capacity: String(capacity), minimum: '10', enrolled: String(enrolled), remarks: enrolled === capacity ? '額滿' : '', selected };
+    return { code: `${i < 30 ? `D${String(offset + 1).padStart(2, '0')}` : 'GE'}${String(i + 1).padStart(3, '0')}`, name: seedCourse.name, englishName: seedCourse.englishName, className: i < 30 ? `${context.department}${context.grade}` : '日大學通識', group: String((i % 2) + 1).padStart(2, '0'), credits: i < 30 ? '3.0' : '2.0', requiredType: seedCourse.requiredType, teacher: i < 30 ? teachers[i % teachers.length] : generalTeachers[i % generalTeachers.length], classroom: rooms[i % rooms.length], time: selected ? times[selectedSlots[i]] : times[(i * 7 + 3) % times.length], hours: i < 30 ? '3.0' : '2.0', semesterType: '學期', capacity: String(capacity), minimum: '10', enrolled: String(enrolled), remarks: enrolled === capacity ? '額滿' : '', selected };
   });
   return { student: { displayName: '展示學生', studentId: 'DEMO', department: context.department, programLabel: context.department, academicYear: '115', semester: '第1學期' }, courses, grades: courses.slice(0, 24).map((course, i) => ({ courseCode: course.code, score: i % 8 === 0 ? '尚未公告' : String(72 + (i * 3 % 26)) })), announcements: data.announcements, safeEmptyPages: ['請假明細', '獎懲紀錄', '兵役申辦', '離校審核'] };
 }
