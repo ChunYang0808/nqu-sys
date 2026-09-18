@@ -7,12 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260918b" />
+    <link rel="stylesheet" href="styles.css?v=20260919a" />
   </head>
   <body>
     <section class="login-screen" id="login-screen" aria-labelledby="login-title">
       <div class="login-banner">
-        <div class="login-logo-slot">LOGO / 校園橫幅圖片預留欄位<img src="logo.png" alt="國立金門大學" onerror="this.style.display='none'" /></div>
+        <div class="login-logo-slot"><img src="logo.png?v=20260919a" alt="國立金門大學" /></div>
       </div>
       <div class="login-box">
         <h1 id="login-title">歡迎使用　校務行政資訊系統</h1>
@@ -33,14 +33,14 @@
 
     <div id="app-shell" hidden>
     <header class="site-header">
-      <button class="utility-button" id="change-password">修改密碼</button>
-      <button class="utility-button" id="toggle-menu">隱藏選單</button>
+      <div class="header-actions">
+        <button class="utility-button" id="change-password">修改密碼</button>
+        <button class="utility-button" id="toggle-menu">隱藏選單</button>
+      </div>
 
-      <!-- 將 logo.png 換成您日後提供的校徽或橫幅圖片即可。 -->
-      <div class="logo-slot" aria-label="校務系統 Logo 預留位置">
-        <span class="logo-hint">LOGO / 校園橫幅圖片預留欄位</span>
+      <div class="logo-slot" aria-label="國立金門大學校務系統橫幅">
         <span class="demo-badge">模擬展示版・非正式校務資料</span>
-        <img src="logo.png" alt="國立金門大學校務資訊系統" onerror="this.style.display='none'" />
+        <img src="logo.png?v=20260919a" alt="國立金門大學校務資訊系統" />
       </div>
 
       <div class="student-summary">
@@ -123,6 +123,6 @@
     <script src="ai-config.js"></script>
     <script src="local-generator.js?v=20260918c"></script>
     <script src="ai-client.js"></script>
-    <script src="app.js?v=20260918c"></script>
+    <script src="app.js?v=20260919a"></script>
   </body>
 </html>

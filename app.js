@@ -563,7 +563,7 @@ function queryForm(title, prompt, controls, key) {
 }
 
 function noDataPage(title, message = '目前無資料') {
-  return `<h1 class="course-title">${title}</h1><section class="query-result empty-result"><strong>${message}</strong><p>AI 模擬學生資料服務完成後，系統將依登入條件產生對應內容。</p></section>`;
+  return `<h1 class="course-title">${title}</h1><section class="query-result empty-result"><strong>${message}</strong></section>`;
 }
 
 const historicalRecordCache = new Map();
@@ -636,7 +636,7 @@ function queryResult(key, filters = []) {
     return scheduleResult(title, `${term}／${value}`, departmentCatalog(department, grade, term).map(courseRow));
   }
   if (key === 'attendance') return noDataPage('學生個人缺曠請假明細表', '目前無缺曠請假資料');
-  if (key === 'awards') return `<h1 class="course-title">學生個人獎懲狀況明細表</h1><section class="query-result empty-result"><strong>目前無獎懲資料</strong><p>AI 模擬學生資料服務完成後將依條件產生資料。</p></section>`;
+  if (key === 'awards') return noDataPage('學生個人獎懲狀況明細表', '目前無獎懲資料');
   return noDataPage(title);
 }
 
