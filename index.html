@@ -10,6 +10,35 @@
     <link rel="stylesheet" href="styles.css?v=20260919a" />
   </head>
   <body>
+
+    <!-- 學術模擬系統警告彈窗 -->
+    <div id="academic-warning" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;box-sizing:border-box;">
+      <div style="width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:28px;font-family:'Noto Sans TC',sans-serif;color:#333;">
+        <h2 style="margin:0 0 12px;text-align:center;color:#b42318;font-size:26px;">⚠️ 學術模擬系統使用聲明</h2>
+        <p style="text-align:center;font-weight:700;color:#7a271a;margin-bottom:20px;">本網站為學術模擬專案，非國立金門大學官方校務系統</p>
+
+        <ul style="padding-left:22px;line-height:1.8;margin:0;">
+          <li>本網站主要用於程式設計、課程實作與學術展示。</li>
+          <li>系統主要著重於 <strong>選課系統、課程查詢、課表與相關校務功能模擬</strong>。</li>
+          <li>網站內的課程名稱、教師、教室、學分、上課時間、成績、學生資料與公告，可能為 <strong>虛構資料、測試資料或程式自動產生資料</strong>。</li>
+          <li>部分內容與資料可能使用 <strong>人工智慧（AI）協助生成</strong>，可能存在錯誤或與真實情況不符。</li>
+          <li>網站內所呈現的課程與資訊 <strong>不代表國立金門大學實際開課內容或正式校務資料</strong>。</li>
+          <li>請勿將本網站資料作為正式選課、學分認定、成績查詢、畢業審核或其他校務決策依據。</li>
+          <li>如需正式資訊，請以 <strong>國立金門大學官方網站及正式校務資訊系統</strong> 公告為準。</li>
+          <li>本網站不需要真實校務帳號或密碼，請勿輸入身分證字號、真實密碼或其他敏感個人資料。</li>
+        </ul>
+
+        <label style="display:flex;gap:10px;align-items:flex-start;margin-top:22px;padding:14px;background:#f5f5f5;border-radius:8px;cursor:pointer;">
+          <input type="checkbox" id="warning-agree" style="margin-top:4px;">
+          <span>我已閱讀並了解以上內容，知道本網站為學術模擬用途，非正式校務系統。</span>
+        </label>
+
+        <button id="warning-enter" disabled style="width:100%;margin-top:16px;padding:12px;border:0;border-radius:8px;background:#999;color:white;font-size:16px;font-weight:700;cursor:not-allowed;">
+          我已了解，進入模擬系統
+        </button>
+      </div>
+    </div>
+
     <section class="login-screen" id="login-screen" aria-labelledby="login-title">
       <div class="login-banner">
         <div class="login-logo-slot"><img src="logo.png?v=20260919a" alt="國立金門大學" /></div>
@@ -117,12 +146,37 @@
       </article>
     </main>
     </div>
+
     <div class="generation-overlay" id="generation-overlay" hidden role="status" aria-live="polite">
       <div><span class="loading-mark"></span><strong>正在建立 AI 模擬校務資料…</strong><p>課程、成績、課表與公告將依登入條件生成。</p></div>
     </div>
+
     <script src="ai-config.js"></script>
     <script src="local-generator.js?v=20260918c"></script>
     <script src="ai-client.js"></script>
     <script src="app.js?v=20260919a"></script>
+
+    <script>
+      const warningAgree = document.getElementById("warning-agree");
+      const warningEnter = document.getElementById("warning-enter");
+      const academicWarning = document.getElementById("academic-warning");
+
+      warningAgree.addEventListener("change", () => {
+        if (warningAgree.checked) {
+          warningEnter.disabled = false;
+          warningEnter.style.background = "#b42318";
+          warningEnter.style.cursor = "pointer";
+        } else {
+          warningEnter.disabled = true;
+          warningEnter.style.background = "#999";
+          warningEnter.style.cursor = "not-allowed";
+        }
+      });
+
+      warningEnter.addEventListener("click", () => {
+        if (!warningAgree.checked) return;
+        academicWarning.style.display = "none";
+      });
+    </script>
   </body>
 </html>
