@@ -244,6 +244,7 @@ loginForm.addEventListener('submit', async (event) => {
   const generationContext = { studentId, studentName, department, grade: gradeText, level: levelSelect.value, departments, csFaculty, classrooms };
   loginContext = generationContext;
   selectionTouched = false;
+  recordDisplayTouched = false;
   departmentCatalogCache.clear();
   historicalRecordCache.clear();
   generatedRecord = normalizeRecord(window.NQU_LOCAL.generateStudentRecord(generationContext), department, gradeText);
@@ -258,7 +259,7 @@ loginForm.addEventListener('submit', async (event) => {
   Promise.resolve()
     .then(() => window.NQU_AI.generateStudentRecord(generationContext))
     .then((record) => {
-      if (!selectionTouched && isUsableAiRecord(record, generationContext)) {
+      if (!selectionTouched && !recordDisplayTouched && isUsableAiRecord(record, generationContext)) {
         generatedRecord = normalizeRecord(record, department, gradeText);
         initializeSelections();
       }
@@ -301,6 +302,7 @@ let generatedRecord = null;
 let selectedCourseCodes = new Set();
 let loginContext = null;
 let selectionTouched = false;
+let recordDisplayTouched = false;
 const departmentCatalogCache = new Map();
 const roomDirectory = new Map(classrooms.map((entry) => {
   const [code, label] = entry.split('｜');
@@ -467,7 +469,7 @@ function renderAddCourseList(category = '一般課程', filters = {}) {
 
 function renderResultList() {
   const credits = selectedCredits();
-  return `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　選課結果查詢</div><h1 class="course-title">網路選課－選課結果查詢</h1><div class="student-line"><span>班級：${document.getElementById('student-program').textContent}　姓名：${document.getElementById('student-name').textContent}　學號：${document.getElementById('student-id').textContent}</span><span>現在時間：115/09/18</span></div><p class="total-line">總學分數（不含抵免科目及教育學程）：${credits.toFixed(1)}　　剩餘可選學分數：${Math.max(0, 25 - credits).toFixed(1)}</p><p><strong>選課結果：</strong></p>${courseTable()}</div>`;
+  return `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　選課結果查詢</div><h1 class="course-title">網路選課－選課結果查詢</h1><div class="student-line"><span>班級：${escapeHtml(document.getElementById('student-program').textContent)}　姓名：${escapeHtml(document.getElementById('student-name').textContent)}　學號：${escapeHtml(document.getElementById('student-id').textContent)}</span><span>現在時間：115/09/18</span></div><p class="total-line">總學分數（不含抵免科目及教育學程）：${credits.toFixed(1)}　　剩餘可選學分數：${Math.max(0, 25 - credits).toFixed(1)}</p><p><strong>選課結果：</strong></p>${courseTable()}</div>`;
 }
 
 function renderCoursePage(page) {
@@ -584,7 +586,7 @@ function queryResult(key, filters = []) {
     const record = recordForTerm(term);
     const scores = new Map(record.grades.map((grade) => [grade.courseCode, grade.score]));
     const rows = record.courses.filter((course) => scores.has(course.code)).map(courseRow);
-    return `<h1 class="course-title">${title}</h1><section class="query-result"><div class="print-line">${term}　　列印日期：115/09/18</div><p>班級：${document.getElementById('student-program').textContent}　　學號：${document.getElementById('student-id').textContent}　　姓名：${document.getElementById('student-name').textContent}</p><p class="small-note">[＊] 表示尚未傳送成績。</p>${simpleGrid(['項次','科目名稱','學分數','授課時數','必選修','學期成績'], rows.map((row, i) => [i + 1, row[1], row[5], row[6], `【${row[7]}】`, scores.get(row[0]) || '＊']))}</section>`;
+    return `<h1 class="course-title">${title}</h1><section class="query-result"><div class="print-line">${term}　　列印日期：115/09/18</div><p>班級：${escapeHtml(document.getElementById('student-program').textContent)}　　學號：${escapeHtml(document.getElementById('student-id').textContent)}　　姓名：${escapeHtml(document.getElementById('student-name').textContent)}</p><p class="small-note">[＊] 表示尚未傳送成績。</p>${simpleGrid(['項次','科目名稱','學分數','授課時數','必選修','學期成績'], rows.map((row, i) => [i + 1, row[1], row[5], row[6], `【${row[7]}】`, scores.get(row[0]) || '＊']))}</section>`;
   }
   if (key === 'history') {
     const terms = ['114學年度第1學期', '114學年度第2學期', '115學年度第1學期'];
@@ -677,6 +679,7 @@ function clubPage(title, message) {
 let currentAddCategory = '一般課程';
 let currentAddFilters = {};
 function openPage(page) {
+  recordDisplayTouched = true;
   const coursePage = renderCoursePage(page);
   contentPanel.innerHTML = coursePage || `<div class="breadcrumb">首頁　&gt;　${page}</div><section class="empty-page"><h1>${page}</h1><p>此功能版型已建立。</p><button id="back-home" class="back-home">回到系統公告</button></section>`;
 }
@@ -779,6 +782,7 @@ document.getElementById('toggle-menu').addEventListener('click', () => {
 });
 
 document.getElementById('change-password').addEventListener('click', () => {
+  recordDisplayTouched = true;
   contentPanel.innerHTML = `<div class="course-page password-page"><h1 class="course-title">修改密碼作業</h1><section class="password-panel"><label>新密碼：<input type="password" placeholder="展示版不會保存"></label><label>確認密碼：<input type="password" placeholder="再次輸入新密碼"></label><p>密碼需包含大小寫英文、數字與標點至少三項，長度最多 10 碼。</p><div><button class="small-button" data-demo-action>確定送出</button><button class="small-button" data-password-clear>清除重填</button></div></section></div>`;
 });
 document.getElementById('logout').addEventListener('click', () => {
