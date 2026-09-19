@@ -266,6 +266,9 @@ loginForm.addEventListener('submit', async (event) => {
   loginContext = generationContext;
   selectionTouched = false;
   recordDisplayTouched = false;
+  creditLimit = 25;
+  clubApplication = '';
+  clubOptions = [...demoClubPool].sort(() => Math.random() - 0.5).slice(0, 15);
   departmentCatalogCache.clear();
   historicalRecordCache.clear();
   generatedRecord = normalizeRecord(window.NQU_LOCAL.generateStudentRecord(generationContext), department, gradeText);
@@ -326,6 +329,10 @@ let selectedCourseCodes = new Set();
 let loginContext = null;
 let selectionTouched = false;
 let recordDisplayTouched = false;
+let creditLimit = 25;
+let clubOptions = [];
+let clubApplication = '';
+const demoClubPool = ['攝影社', '吉他社', '熱音社', '桌遊社', '羽球社', '籃球社', '排球社', '街舞社', '手作社', '天文社', '動漫研究社', '志工服務社', '電影欣賞社', '登山社', '烘焙社', '茶藝社', '書法社', '戲劇社', '魔術社', '環保社', '資訊研究社', '海洋探索社', '國際交流社', '瑜珈社'];
 const departmentCatalogCache = new Map();
 const roomDirectory = new Map(classrooms.map((entry) => {
   const [code, label] = entry.split('｜');
@@ -529,7 +536,7 @@ function renderAddCourseList(category = '一般課程', filters = {}) {
 
 function renderResultList() {
   const credits = selectedCredits();
-  return `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　選課結果查詢</div><h1 class="course-title">網路選課－選課結果查詢</h1><div class="student-line"><span>班級：${escapeHtml(document.getElementById('student-program').textContent)}　姓名：${escapeHtml(document.getElementById('student-name').textContent)}　學號：${escapeHtml(document.getElementById('student-id').textContent)}</span><span>現在時間：115/09/18</span></div><p class="total-line">總學分數（不含抵免科目及教育學程）：${credits.toFixed(1)}　　剩餘可選學分數：${Math.max(0, 25 - credits).toFixed(1)}</p><p><strong>選課結果：</strong></p>${courseTable()}</div>`;
+  return `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　選課結果查詢</div><h1 class="course-title">網路選課－選課結果查詢</h1><div class="student-line"><span>班級：${escapeHtml(document.getElementById('student-program').textContent)}　姓名：${escapeHtml(document.getElementById('student-name').textContent)}　學號：${escapeHtml(document.getElementById('student-id').textContent)}</span><span>現在時間：115/09/18</span></div><p class="total-line">總學分數（不含抵免科目及教育學程）：${credits.toFixed(1)}　　學分上限：${creditLimit.toFixed(1)}　　剩餘可選學分數：${Math.max(0, creditLimit - credits).toFixed(1)}</p><p><strong>選課結果：</strong></p>${courseTable()}</div>`;
 }
 
 function renderCoursePage(page) {
@@ -558,13 +565,13 @@ function renderCoursePage(page) {
     <h3>辦理方式</h3><ol><li>先於系統確認可申請的課程及申請資格。</li><li>列印申請表並依序完成授課教師、系（所）主管等核章。</li><li>於公告截止日前送交課務承辦單位；逾期恕不受理。</li></ol>
     <p class="rule-warning">本展示版僅呈現規則；按下確認不會產生申請或變動任何選課資料。</p>`));
   if (page === '超修學分申請') return shell(renderRulePage('超修學分申請', `
-    <h2>申請規則</h2><h3>日間部超修學分申請規則</h3>
-    <ol><li>前一學年學業成績優良、符合系所規定資格者，得經系（所）主管同意申請超修。</li><li>核准後之修習學分仍須符合學校當學期規定及課程先修、衝堂限制。</li><li>申請人須列印申請表，完成系所審核後，於公告期限內繳交課務承辦單位。</li></ol>
-    <h3>提醒</h3><p>實際資格、可超修學分與截止日期均以當學期公告及系所審核結果為準。</p><p class="rule-warning">此為前端版型展示，確認不會送出超修申請。</p>`));
+    <h2>展示版申請條件</h2><p>目前已選：<strong>${selectedCredits().toFixed(1)} 學分</strong>；目前學分上限：${creditLimit} 學分。</p>
+    <p>已選滿 25 學分即可申請超修；確認後本展示站的選課上限增加 5 學分，最高 30 學分。</p>
+    <p class="small-note">此為模擬功能，並非正式校務核准；實際規定請依學校公告。</p>`));
   if (page === '酌減學分申請') return shell(renderRulePage('酌減學分申請', `
-    <h2>申請規則</h2><h3>日間部酌減學分申請規則</h3>
-    <ol><li>應屆畢業生如已完成畢業應修科目及學分，且不申請提前畢業者，得依規定申請酌減最低修習學分。</li><li>因特殊原因需酌減學分者，應檢附資料並經導師、系（所）主管及相關會議審核。</li><li>核准後當學期仍應至少修習一門課程，並遵守各項修課規定。</li></ol>
-    <h3>辦理方式</h3><p>請先確認資格，列印申請表並依公告流程送交審核；實際結果以正式核定為準。</p><p class="rule-warning">此為前端版型展示，確認不會送出酌減學分申請。</p>`));
+    <h2>展示版申請條件</h2><p>目前已選：<strong>${selectedCredits().toFixed(1)} 學分</strong>；目前學分上限：${creditLimit} 學分。</p>
+    <p>已選學分高於 2 學分即可確認；本展示站將學分上限調整為 16 學分。不會自動退選已選課程。</p>
+    <p class="small-note">此為模擬功能，並非正式校務核准；實際規定請依學校公告。</p>`));
   if (page === '學分學程資訊') return shell(`<h1 class="course-title">學分學程資訊</h1><section class="program-page"><p>為促進跨領域學習與整合校內資源，本校設有多項學分學程及微學程，學生可依規定申請修習。</p><ul><li>修畢學程規定課程及學分者，得向開設單位申請相關修習證明。</li><li>實際開設課程、申請資格及修習規範，請以各學程當學期公告為準。</li></ul><h2>跨領域學程</h2>${programTable(['智慧高齡服務學程', '企業營運資訊管理學程', '島嶼永續發展學程', '軟體系統整合應用學程'])}<h2>微學程</h2>${programTable(['資訊工程微學程', '釀酒工藝微學程', '華語文教學微學程', '國際事務微學程', '觀光遊憩微學程', '長期照護微學程', '社會工作微學程', '應用英語微學程'])}<h2>跨校學分學程</h2>${programTable(['跨校通識數位學程', '離島創新與永續學程'])}</section>`);
   if (page === '學期成績查詢') return shell(queryForm(page, '請選擇年度及學期：', selectOptions(['115學年度第1學期', '114學年度第2學期', '114學年度第1學期']), 'grades'));
   if (page === '學生期中預警查詢') return shell(noDataPage(page, '目前無學生預警資料'));
@@ -592,7 +599,7 @@ function renderCoursePage(page) {
   if (page === '教學評量登錄作業') return shell(`<h1 class="course-title">教學評量登錄作業</h1><section class="query-result"><p>115學年度第1學期　教學評量課程清單</p>${simpleGrid(['科目名稱','授課教師','填寫狀態','操作'], selectedCourses().slice(0, 4).map((course, i) => [course[1], course[9], i === 0 ? '已完成' : '未開放', '<button class="small-button" data-demo-action>填寫</button>']))}<p class="small-note">展示版不會開啟或儲存問卷。</p></section>`);
   if (page === '問卷調查') return shell(noDataPage(page, '目前無可填寫問卷'));
   if (page === '學生基本資料表') return shell(profilePage());
-  if (page === '社員登錄作業') return shell(clubPage('社員登錄作業', '目前未加入任何社團'));
+  if (page === '社員登錄作業' || page === '社團登錄作業') return shell(clubRegistrationPage());
   if (page === '社團資料維護作業') return shell(clubPage('社團資料維護作業', '目前無可維護的社團資料'));
   if (page === '學期預計活動登錄作業') return shell(clubPage('學期預計活動登錄作業', '目前無學期預計活動資料'));
   if (page === '活動申請登錄作業') return shell(clubPage('活動申請登錄作業', '目前無活動申請資料'));
@@ -732,6 +739,12 @@ function profilePage() {
   return `<h1 class="course-title">學生基本資料表</h1><section class="profile-card"><h2>基本資料</h2><div class="profile-grid">${fields.map(([label, value]) => `<label>${label}<input value="${escapeHtml(value)}" readonly></label>`).join('')}</div><p class="small-note">此頁只顯示登入時填寫的展示身分。</p></section>`;
 }
 
+function clubRegistrationPage() {
+  const title = '社團登錄作業';
+  if (clubApplication) return `<h1 class="course-title">${title}</h1><section class="query-result"><p>申請社團：<strong>${escapeHtml(clubApplication)}</strong></p><div class="rule-status"><strong>審核中</strong><p>此為展示站內的模擬申請，不會送交學校。</p></div></section>`;
+  return `<h1 class="course-title">${title}</h1><section class="query-result"><p>請選擇一個社團並確認送出。以下 15 項由本地清單隨機抽取，非正式社團名錄。</p><table class="program-table"><thead><tr><th>選擇</th><th>社團名稱</th></tr></thead><tbody>${clubOptions.map((name) => `<tr><td><input type="radio" name="club-choice" value="${escapeHtml(name)}" aria-label="${escapeHtml(name)}"></td><td>${escapeHtml(name)}</td></tr>`).join('')}</tbody></table><div class="rule-action"><button class="small-button" data-club-submit>確認送出申請</button></div><p class="selection-feedback" role="status"></p></section>`;
+}
+
 function clubPage(title, message) {
   return `<h1 class="course-title">${title}</h1><section class="query-result empty-result"><strong>${message}</strong><p>展示版不會進行登錄、維護或送出活動資料。</p></section>`;
 }
@@ -796,7 +809,7 @@ contentPanel.addEventListener('click', (event) => {
       if (course[15] === '額滿') { messages.push(`${course[1]}：額滿`); return; }
       const conflict = selectedCourses().find((selected) => coursesOverlap(selected, course));
       if (conflict) { messages.push(`${course[1]}：與「${conflict[1]}」衝堂`); return; }
-      if (selectedCredits() + Number(course[5]) > 25) { messages.push(`${course[1]}：超過 25 學分上限`); return; }
+      if (selectedCredits() + Number(course[5]) > creditLimit) { messages.push(`${course[1]}：超過 ${creditLimit} 學分上限`); return; }
       selectedCourseCodes.add(code);
       selectionTouched = true;
       messages.push(`${course[1]}：已加選`);
@@ -813,9 +826,24 @@ contentPanel.addEventListener('click', (event) => {
     contentPanel.querySelector('.submit-row').insertAdjacentHTML('afterend', `<p class="selection-feedback" role="status">${codes.length ? `已退選 ${codes.length} 門課，選課結果與課表已同步更新。` : '請先勾選要退選的課程。'}</p>`);
   } else if (control.hasAttribute('data-view-result')) {
     contentPanel.innerHTML = renderResultList();
+  } else if (control.hasAttribute('data-club-submit')) {
+    const chosen = contentPanel.querySelector('input[name="club-choice"]:checked');
+    if (!chosen) { contentPanel.querySelector('.selection-feedback').textContent = '請先選擇一個社團。'; return; }
+    clubApplication = chosen.value;
+    openPage('社團登錄作業');
   } else if (control.hasAttribute('data-rule-confirm')) {
     const page = control.dataset.ruleName;
-    contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　${page}</div><h1 class="course-title">${page}</h1><div class="rule-status"><strong>目前尚無可申請資料</strong><p>此展示版的確認不會建立申請。</p><button class="small-button" data-rule-back="${page}">回申請規則</button></div></div>`;
+    const credits = selectedCredits();
+    let headline = '目前尚無可申請資料';
+    let detail = '此展示版的確認不會建立正式申請。';
+    if (page === '超修學分申請') {
+      if (credits >= 25) { creditLimit = 30; selectionTouched = true; headline = '模擬申請已通過'; detail = '選課上限已由 25 學分提高至 30 學分，可返回線上加選作業繼續選課。'; }
+      else { headline = '不符合超修資格'; detail = `目前已選 ${credits.toFixed(1)} 學分，須選滿 25 學分才能申請。`; }
+    } else if (page === '酌減學分申請') {
+      if (credits > 2) { creditLimit = 16; selectionTouched = true; headline = '模擬申請已通過'; detail = credits > 16 ? `學分上限已設為 16 學分；目前已選 ${credits.toFixed(1)} 學分，請自行退選至上限內，系統不會自動退選。` : '學分上限已設為 16 學分。'; }
+      else { headline = '不符合酌減資格'; detail = '未滿 2 學分建議退學（開玩笑，僅供展示）；請先選超過 2 學分。'; }
+    }
+    contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　${page}</div><h1 class="course-title">${page}</h1><div class="rule-status"><strong>${headline}</strong><p>${detail}</p><p class="small-note">僅本站模擬，並未提交正式校務申請。</p><button class="small-button" data-rule-back="${page}">回申請規則</button></div></div>`;
   } else if (control.hasAttribute('data-rule-back')) {
     openPage(control.dataset.ruleBack);
   } else if (control.hasAttribute('data-program-info')) {
