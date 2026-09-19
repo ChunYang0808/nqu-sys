@@ -267,6 +267,7 @@ loginForm.addEventListener('submit', async (event) => {
   selectionTouched = false;
   recordDisplayTouched = false;
   creditLimit = 25;
+  reducedCreditsApproved = false;
   clubApplication = '';
   clubOptions = [...demoClubPool].sort(() => Math.random() - 0.5).slice(0, 15);
   departmentCatalogCache.clear();
@@ -330,6 +331,7 @@ let loginContext = null;
 let selectionTouched = false;
 let recordDisplayTouched = false;
 let creditLimit = 25;
+let reducedCreditsApproved = false;
 let clubOptions = [];
 let clubApplication = '';
 const demoClubPool = ['攝影社', '吉他社', '熱音社', '桌遊社', '羽球社', '籃球社', '排球社', '街舞社', '手作社', '天文社', '動漫研究社', '志工服務社', '電影欣賞社', '登山社', '烘焙社', '茶藝社', '書法社', '戲劇社', '魔術社', '環保社', '資訊研究社', '海洋探索社', '國際交流社', '瑜珈社'];
@@ -481,6 +483,23 @@ function selectedCredits() {
   return selectedCourses().reduce((total, course) => total + Number(course[5] || 0), 0);
 }
 
+function showActionDialog(title, message, tone = 'info') {
+  let dialog = document.getElementById('action-dialog');
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'action-dialog';
+    dialog.setAttribute('aria-labelledby', 'action-dialog-title');
+    dialog.innerHTML = '<div class="action-dialog__head"><h2 id="action-dialog-title"></h2></div><p class="action-dialog__message"></p><div class="action-dialog__actions"><button type="button" class="small-button" data-action-close>我知道了</button></div>';
+    document.body.appendChild(dialog);
+    dialog.querySelector('[data-action-close]').addEventListener('click', () => dialog.close());
+  }
+  if (dialog.open) dialog.close();
+  dialog.className = `action-dialog is-${tone}`;
+  dialog.querySelector('#action-dialog-title').textContent = title;
+  dialog.querySelector('.action-dialog__message').textContent = message;
+  dialog.showModal();
+}
+
 function findCourse(code) {
   return [...activeCourses(), ...Array.from(departmentCatalogCache.values()).flatMap((courses) => courses.map(courseRow)), ...sharedCourses.map(courseRow)]
     .find((course) => course[0] === code);
@@ -570,7 +589,7 @@ function renderCoursePage(page) {
     <p class="small-note">此為模擬功能，並非正式校務核准；實際規定請依學校公告。</p>`));
   if (page === '酌減學分申請') return shell(renderRulePage('酌減學分申請', `
     <h2>展示版申請條件</h2><p>目前已選：<strong>${selectedCredits().toFixed(1)} 學分</strong>；目前學分上限：${creditLimit} 學分。</p>
-    <p>已選學分高於 2 學分即可確認；本展示站將學分上限調整為 16 學分。不會自動退選已選課程。</p>
+    <p>已選學分須大於 2 學分且低於 16 學分，才能申請；確認後本展示站的學分上限設為 16 學分。</p>
     <p class="small-note">此為模擬功能，並非正式校務核准；實際規定請依學校公告。</p>`));
   if (page === '學分學程資訊') return shell(`<h1 class="course-title">學分學程資訊</h1><section class="program-page"><p>為促進跨領域學習與整合校內資源，本校設有多項學分學程及微學程，學生可依規定申請修習。</p><ul><li>修畢學程規定課程及學分者，得向開設單位申請相關修習證明。</li><li>實際開設課程、申請資格及修習規範，請以各學程當學期公告為準。</li></ul><h2>跨領域學程</h2>${programTable(['智慧高齡服務學程', '企業營運資訊管理學程', '島嶼永續發展學程', '軟體系統整合應用學程'])}<h2>微學程</h2>${programTable(['資訊工程微學程', '釀酒工藝微學程', '華語文教學微學程', '國際事務微學程', '觀光遊憩微學程', '長期照護微學程', '社會工作微學程', '應用英語微學程'])}<h2>跨校學分學程</h2>${programTable(['跨校通識數位學程', '離島創新與永續學程'])}</section>`);
   if (page === '學期成績查詢') return shell(queryForm(page, '請選擇年度及學期：', selectOptions(['115學年度第1學期', '114學年度第2學期', '114學年度第1學期']), 'grades'));
@@ -815,15 +834,27 @@ contentPanel.addEventListener('click', (event) => {
       messages.push(`${course[1]}：已加選`);
     });
     contentPanel.innerHTML = renderAddCourseList(currentAddCategory, currentAddFilters);
-    contentPanel.querySelector('.selection-feedback').textContent = messages.length ? messages.join('；') : '請先勾選可加選的課程。';
+    const feedback = messages.length ? messages.join('；') : '請先勾選可加選的課程。';
+    contentPanel.querySelector('.selection-feedback').textContent = feedback;
+    const added = messages.filter((message) => message.endsWith('：已加選')).length;
+    const failed = messages.length - added;
+    showActionDialog(added ? failed ? '部分加選完成' : '加選成功' : '加選未完成', feedback, added ? failed ? 'warning' : 'success' : 'error');
   } else if (control.hasAttribute('data-commit-withdraw')) {
     const codes = Array.from(contentPanel.querySelectorAll('[data-course-choice]:checked')).map((input) => input.dataset.courseChoice);
     if (codes.length) {
       codes.forEach((code) => selectedCourseCodes.delete(code));
       selectionTouched = true;
     }
+    const credits = selectedCredits();
+    const feedback = codes.length ? `已退選 ${codes.length} 門課，選課結果與課表已同步更新。` : '請先勾選要退選的課程。';
+    const warning = codes.length && reducedCreditsApproved && credits < 2
+      ? `目前僅剩 ${credits.toFixed(1)} 學分，低於酌減後的 2 學分門檻，可能遭退學。此為模擬提醒，請確認修課規定。`
+      : codes.length && !reducedCreditsApproved && credits < 16
+        ? `目前僅剩 ${credits.toFixed(1)} 學分，低於 16 學分可能遭退學；可確認是否符合酌減學分申請資格。此為模擬提醒。`
+        : '';
     openPage('線上退選作業');
-    contentPanel.querySelector('.submit-row').insertAdjacentHTML('afterend', `<p class="selection-feedback" role="status">${codes.length ? `已退選 ${codes.length} 門課，選課結果與課表已同步更新。` : '請先勾選要退選的課程。'}</p>`);
+    contentPanel.querySelector('.submit-row').insertAdjacentHTML('afterend', `<p class="selection-feedback" role="status">${feedback}</p>`);
+    showActionDialog(warning ? '退選後學分警告' : codes.length ? '退選成功' : '尚未退選', warning ? `${feedback}\n${warning}` : feedback, warning ? 'warning' : codes.length ? 'success' : 'error');
   } else if (control.hasAttribute('data-view-result')) {
     contentPanel.innerHTML = renderResultList();
   } else if (control.hasAttribute('data-club-submit')) {
@@ -837,13 +868,32 @@ contentPanel.addEventListener('click', (event) => {
     let headline = '目前尚無可申請資料';
     let detail = '此展示版的確認不會建立正式申請。';
     if (page === '超修學分申請') {
-      if (credits >= 25) { creditLimit = 30; selectionTouched = true; headline = '模擬申請已通過'; detail = '選課上限已由 25 學分提高至 30 學分，可返回線上加選作業繼續選課。'; }
-      else { headline = '不符合超修資格'; detail = `目前已選 ${credits.toFixed(1)} 學分，須選滿 25 學分才能申請。`; }
+      if (credits >= 25) {
+        creditLimit = 30;
+        reducedCreditsApproved = false;
+        selectionTouched = true;
+        headline = '模擬申請已通過';
+        detail = '選課上限已由 25 學分提高至 30 學分，可返回線上加選作業繼續選課。';
+      } else {
+        headline = '不符合超修資格';
+        detail = `目前已選 ${credits.toFixed(1)} 學分，須選滿 25 學分才能申請。`;
+      }
     } else if (page === '酌減學分申請') {
-      if (credits > 2) { creditLimit = 16; selectionTouched = true; headline = '模擬申請已通過'; detail = credits > 16 ? `學分上限已設為 16 學分；目前已選 ${credits.toFixed(1)} 學分，請自行退選至上限內，系統不會自動退選。` : '學分上限已設為 16 學分。'; }
-      else { headline = '不符合酌減資格'; detail = '未滿 2 學分建議退學（開玩笑，僅供展示）；請先選超過 2 學分。'; }
+      if (credits > 2 && credits < 16) {
+        creditLimit = 16;
+        reducedCreditsApproved = true;
+        selectionTouched = true;
+        headline = '模擬申請已通過';
+        detail = '已選學分高於 2 且低於 16，展示站的學分上限已設為 16 學分。';
+      } else {
+        headline = '不符合酌減資格';
+        detail = credits <= 2
+          ? `目前已選 ${credits.toFixed(1)} 學分，須高於 2 學分才能申請。${credits < 2 ? '未滿 2 學分建議退學（開玩笑，僅供展示）。' : ''}`
+          : `目前已選 ${credits.toFixed(1)} 學分；請先退選至低於 16 學分再申請。`;
+      }
     }
     contentPanel.innerHTML = `<div class="course-page"><div class="breadcrumb">首頁　&gt;　選課作業　&gt;　${page}</div><h1 class="course-title">${page}</h1><div class="rule-status"><strong>${headline}</strong><p>${detail}</p><p class="small-note">僅本站模擬，並未提交正式校務申請。</p><button class="small-button" data-rule-back="${page}">回申請規則</button></div></div>`;
+    showActionDialog(headline, detail, headline === '模擬申請已通過' ? 'success' : 'error');
   } else if (control.hasAttribute('data-rule-back')) {
     openPage(control.dataset.ruleBack);
   } else if (control.hasAttribute('data-program-info')) {
