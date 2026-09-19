@@ -82,9 +82,19 @@ window.NQU_LOCAL = {
     const rooms = context.classrooms.map((entry) => { const [code, name] = entry.split('｜'); return { code, name }; });
     const roomFor = (department) => { const allowed = roomTokens[department] || []; const candidates = rooms.filter((room) => allowed.some((token) => room.code.includes(token) || room.name.includes(token))); return choose(candidates.length ? candidates : rooms.filter((room) => /普通教室|教室（理工大樓）/.test(room.name))); };
     const teacherFor = (department) => department === '資訊工程學系' ? choose(context.csFaculty) : `${choose(['林', '陳', '王', '李', '張', '黃', '劉'])}${choose(['思妤', '冠宇', '雅雯', '承翰', '怡君', '子維'])}`;
-    const timeSlots = ['(一)1-2', '(一)3-4', '(一)5-6', '(一)7-8', '(一)9-10', '(一)11-12', '(二)1-2', '(二)3-4', '(二)5-6', '(二)7-8', '(二)9-10', '(二)11-12', '(三)1-2', '(三)3-4', '(三)5-6', '(三)7-8', '(三)9-10', '(三)11-12', '(四)1-2', '(四)3-4', '(四)5-6', '(四)7-8', '(四)9-10', '(四)11-12', '(五)1-2', '(五)3-4', '(五)5-6', '(五)7-8', '(五)9-10', '(五)11-12'];
-    const selectedSlots = [0, 7, 14, 21, 28, 11, 18];
-    const makeCourse = (name, englishName, index, category, field) => { const room = roomFor(field); const capacity = category === '通識' ? choose([40, 45, 50, 55]) : choose([35, 40, 45]); const full = index % 6 === 0; const enrolled = full ? capacity : Math.max(12, capacity - 1 - Math.floor(random() * 14)); const classroom = room.name.startsWith(room.code) ? room.name : `${room.code}${room.name}`; return { code: `${field === context.department ? '1' : '8'}${String(100 + index).padStart(3, '0')}`, name, englishName, className: category === '通識' ? '日大學通識' : `${departmentShort[field] || '跨域'}${context.grade.replace(/[^一二三四五六]/g, '') || '二'}`, group: String((index % 2) + 1).padStart(2, '0'), credits: category === '通識' ? '2.0' : '3.0', requiredType: category === '通識' ? '通識' : index % 3 === 0 ? '選修' : '必修', teacher: teacherFor(field), classroom, time: timeSlots[category !== '通識' && index < 7 ? selectedSlots[index] : (index * 7 + 3) % timeSlots.length], hours: category === '通識' ? '2.0' : '3.0', semesterType: '學期', capacity: String(capacity), minimum: '10', enrolled: String(enrolled), remarks: full ? '額滿' : '' }; };
+    const twoPeriodSlots = ['一', '二', '三', '四', '五'].flatMap((day) => [1, 3, 5, 7, 9, 11].map((start) => `(${day})${start}-${start + 1}`));
+    const threePeriodSlots = ['一', '二', '三', '四', '五'].flatMap((day) => [1, 4, 7, 10].map((start) => `(${day})${start}-${start + 2}`));
+    const selectedSlots = ['(一)1-3', '(二)4-6', '(三)7-9', '(四)1-3', '(五)4-6', '(二)10-12', '(四)7-9'];
+    const makeCourse = (name, englishName, index, category, field) => {
+      const room = roomFor(field);
+      const capacity = category === '通識' ? choose([40, 45, 50, 55]) : choose([35, 40, 45]);
+      const full = index % 6 === 0;
+      const enrolled = full ? capacity : Math.max(12, capacity - 1 - Math.floor(random() * 14));
+      const classroom = room.name.startsWith(room.code) ? room.name : `${room.code}${room.name}`;
+      const general = category === '通識';
+      const slots = general ? twoPeriodSlots : threePeriodSlots;
+      return { code: `${field === context.department ? '1' : '8'}${String(100 + index).padStart(3, '0')}`, name, englishName, className: general ? '日大學通識' : `${departmentShort[field] || '跨域'}${context.grade.replace(/[^一二三四五六]/g, '') || '二'}`, group: String((index % 2) + 1).padStart(2, '0'), credits: general ? '2.0' : '3.0', requiredType: general ? '通識' : index % 3 === 0 ? '選修' : '必修', teacher: teacherFor(field), classroom, time: !general && index < 7 ? selectedSlots[index] : slots[(index * 7 + 3) % slots.length], hours: general ? '2.0' : '3.0', semesterType: '學期', capacity: String(capacity), minimum: '10', enrolled: String(enrolled), remarks: full ? '額滿' : '' };
+    };
     const degreeNames = departmentCourses[context.department] || ['專業基礎', '領域實務', '專題研究', '跨域應用'];
     const majorCourses = Array.from({ length: 30 }, (_, index) => { const title = courseTitle(degreeNames[index % degreeNames.length], index, context.department); return { ...makeCourse(title.chinese, title.english, index, '專業', context.department), selected: index < 7 }; });
     const generalNames = ['世界文化史', '世界音樂與舞蹈', '世界音樂賞析', '中國大陸流行文化', '中國文學：鑑賞與製作', '人工智慧輔助設計思考', '人體生理的奧秘', '休閒與游泳實務理論', '健康生活面面觀', '傳染病學概論', '全民國防教育軍事訓練課程', '島嶼永續發展', '數位人文導論', '公民社會與法治', '科學與生活', '電影與視覺文化', '生命教育與倫理', '台灣社會與文化', '藝術欣賞', '媒體識讀', '環境永續', '運動與健康', '心理學與生活', '科技倫理'];

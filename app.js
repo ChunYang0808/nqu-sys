@@ -228,9 +228,30 @@ function populateGrades() {
 populateGrades();
 levelSelect.addEventListener('change', populateGrades);
 
+const warningAgree = document.getElementById('warning-agree');
+const warningEnter = document.getElementById('warning-enter');
+const profileOverlay = document.getElementById('profile-overlay');
+const profileForm = document.getElementById('profile-form');
+let profileReady = false;
+warningAgree.addEventListener('change', () => { warningEnter.disabled = !warningAgree.checked; });
+warningEnter.addEventListener('click', () => {
+  if (!warningAgree.checked) return;
+  document.getElementById('academic-warning').hidden = true;
+  profileOverlay.hidden = false;
+  document.getElementById('login-name').focus();
+});
+profileForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  profileReady = true;
+  profileOverlay.hidden = true;
+  document.getElementById('login-id').focus();
+});
+
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (!profileReady) { profileOverlay.hidden = false; return; }
   document.getElementById('login-password').value = '';
+  document.getElementById('login-code').value = '';
   const studentId = document.getElementById('login-id').value.trim() || 'AI115410001';
   const studentName = document.getElementById('login-name').value.trim() || 'AI 模擬學生';
   const department = departmentSelect.value;
@@ -249,6 +270,7 @@ loginForm.addEventListener('submit', async (event) => {
   historicalRecordCache.clear();
   generatedRecord = normalizeRecord(window.NQU_LOCAL.generateStudentRecord(generationContext), department, gradeText);
   initializeSelections();
+  reconcileTimetables();
   const overlay = document.getElementById('generation-overlay');
   overlay.hidden = false;
   overlay.style.display = 'grid';
@@ -262,6 +284,7 @@ loginForm.addEventListener('submit', async (event) => {
       if (!selectionTouched && !recordDisplayTouched && isUsableAiRecord(record, generationContext)) {
         generatedRecord = normalizeRecord(record, department, gradeText);
         initializeSelections();
+        reconcileTimetables();
       }
     })
     .catch((error) => {
@@ -273,7 +296,7 @@ loginForm.addEventListener('submit', async (event) => {
     });
 });
 
-loginForm.addEventListener('reset', () => setTimeout(() => { departmentSelect.value = '資訊工程學系'; levelSelect.value = 'bachelor'; populateGrades(); }, 0));
+loginForm.addEventListener('reset', () => { document.getElementById('login-code').value = ''; });
 
 document.querySelectorAll('.tree-menu h2').forEach((heading) => {
   heading.addEventListener('click', () => heading.parentElement.classList.toggle('is-collapsed'));
@@ -346,8 +369,9 @@ function normalizeRecord(record, department, grade, catalog = false, term = '115
       ...course, code, offeringDepartment: unit,
       name: safeCourseText(course.name), englishName: safeCourseText(course.englishName),
       className: general ? '日大學通識' : `${shortDepartments[department] || department}${grade.replace('年級', '').replace('碩士', '碩').replace('博士', '博')}`,
-      credits: general ? '2.0' : String(course.credits || '3.0'),
-      hours: general ? '2.0' : String(course.hours || course.credits || '3.0'),
+      credits: general ? '2.0' : '3.0',
+      hours: general ? '2.0' : '3.0',
+      catalogTerm: term,
       requiredType: general ? '通識' : course.requiredType === '必修' ? '必修' : '選修',
       teacher: !general && department === '資訊工程學系' && csFaculty.includes(course.teacher) ? course.teacher : teacherList[index % teacherList.length],
       classroom: room,
@@ -364,13 +388,14 @@ function departmentCatalog(department, grade = loginContext?.grade || '二年級
   if (!departmentCatalogCache.has(cacheKey)) {
     const context = { ...loginContext, studentId: `CATALOG-${term}-${departments.indexOf(department)}-${grade}`, department, grade };
     departmentCatalogCache.set(cacheKey, normalizeRecord(window.NQU_LOCAL.generateStudentRecord(context), department, grade, true, term).courses.slice(0, 30));
+    reconcileTimetables();
   }
   return departmentCatalogCache.get(cacheKey);
 }
 
 function supplementalCourses() {
   const names = [
-    ...Array.from({ length: 16 }, (_, i) => ({ code: `PE${String(i + 1).padStart(3, '0')}`, name: ['體育（一）', '體育（二）', '運動與健康', '球類運動', '體適能訓練', '休閒運動'][i % 6], englishName: 'Physical Education', category: '體育課程', teacher: sportFaculty[i % sportFaculty.length], room: ['701', '702', 'A104', '129'][i % 4], credits: '1.0' })),
+    ...Array.from({ length: 16 }, (_, i) => ({ code: `PE${String(i + 1).padStart(3, '0')}`, name: ['體育（一）', '體育（二）', '運動與健康', '球類運動', '體適能訓練', '休閒運動'][i % 6], englishName: 'Physical Education', category: '體育課程', teacher: sportFaculty[i % sportFaculty.length], room: ['701', '702', 'A104', '702', 'A104', '701'][i % 6], credits: '0.0' })),
     ...['大學國文（一）', '大學國文（二）'].flatMap((name, level) => Array.from({ length: 10 }, (_, i) => ({ code: `CH${level + 1}${String(i + 1).padStart(2, '0')}`, name, englishName: `College Chinese ${level + 1}`, category: '大學國文', teacher: chineseFaculty[i], room: ['406', '407', '409', '424', '425'][i % 5], credits: '2.0' }))),
     ...['大學英文（一）', '大學英文（二）'].flatMap((name, level) => Array.from({ length: 10 }, (_, i) => ({ code: `EN${level + 1}${String(i + 1).padStart(2, '0')}`, name, englishName: `College English ${level + 1}`, category: '大學英文', teacher: englishFaculty[i], room: ['427', '429', '430', '450', '424'][i % 5], credits: '2.0' })))
   ];
@@ -389,6 +414,41 @@ function supplementalCourses() {
   }));
 }
 const sharedCourses = supplementalCourses();
+
+function reconcileTimetables() {
+  const days = ['一', '二', '三', '四', '五'];
+  const occupied = new Set();
+  const selectedOccupied = new Set();
+  const courses = [...sharedCourses, ...(generatedRecord?.courses || []), ...Array.from(departmentCatalogCache.values()).flat()];
+  courses.forEach((course) => {
+    const term = course.catalogTerm || '115學年度第1學期';
+    const duration = Math.max(1, Math.min(12, Math.round(Number(course.hours) || 2)));
+    const preferred = /^\(([一二三四五])\)(\d+)-(\d+)$/.exec(course.time || '');
+    const preferredDay = preferred ? preferred[1] : days[0];
+    const preferredStart = preferred ? Number(preferred[2]) : 1;
+    const alternatives = [];
+    for (let dayOffset = 0; dayOffset < days.length; dayOffset++) {
+      const day = days[(days.indexOf(preferredDay) + dayOffset) % days.length];
+      for (let startOffset = 0; startOffset <= 12 - duration; startOffset++) {
+        const start = ((preferredStart - 1 + startOffset) % (13 - duration)) + 1;
+        alternatives.push([day, start]);
+      }
+    }
+    const available = ([day, start]) => Array.from({ length: duration }, (_, i) => start + i).every((period) => {
+      const teacherKey = `${term}|teacher|${course.teacher}|${day}|${period}`;
+      const roomKey = `${term}|room|${course.classroom}|${day}|${period}`;
+      const studentKey = `${term}|student|${day}|${period}`;
+      return !occupied.has(teacherKey) && !occupied.has(roomKey) && (!selectedCourseCodes.has(course.code) || !selectedOccupied.has(studentKey));
+    });
+    const [day, start] = alternatives.find(available) || [preferredDay, Math.min(preferredStart, 13 - duration)];
+    course.time = `(${day})${start}-${start + duration - 1}`;
+    for (let period = start; period < start + duration; period++) {
+      occupied.add(`${term}|teacher|${course.teacher}|${day}|${period}`);
+      occupied.add(`${term}|room|${course.classroom}|${day}|${period}`);
+      if (selectedCourseCodes.has(course.code)) selectedOccupied.add(`${term}|student|${day}|${period}`);
+    }
+  });
+}
 
 function courseRow(course) {
   return [course.code, course.name, course.englishName, course.className, course.group, course.credits,
@@ -646,7 +706,7 @@ function simpleGrid(headers, rows) {
 
 function scheduleResult(title, subject = '', rows = selectedCourses()) {
   const days = ['一', '二', '三', '四', '五'];
-  const slots = [1, 3, 5, 7, 9, 11];
+  const slots = Array.from({ length: 12 }, (_, index) => index + 1);
   const grid = Object.fromEntries(days.map((day) => [day, Object.fromEntries(slots.map((slot) => [slot, []]))]));
   rows.forEach((course) => {
     const match = /^\(([一二三四五])\)(\d+)-(\d+)$/.exec(course[11]);
@@ -654,11 +714,11 @@ function scheduleResult(title, subject = '', rows = selectedCourses()) {
     const [, day, startText, endText] = match;
     const start = Number(startText);
     const end = Number(endText);
-    slots.filter((slot) => start <= slot + 1 && end >= slot).forEach((slot) => {
+    slots.filter((slot) => start <= slot && end >= slot).forEach((slot) => {
       grid[day][slot].push(`${course[1]}<br><small>${course[9]}／${course[10]}</small>`);
     });
   });
-  const cells = slots.map((slot) => [`第 ${slot}-${slot + 1} 節`, ...days.map((day) => grid[day][slot].join('<hr>'))]);
+  const cells = slots.map((slot) => [`第 ${slot} 節`, ...days.map((day) => grid[day][slot].join('<hr>'))]);
   const heading = title === '我的課表' ? `本學期已選 ${selectedCourses().length} 門課，共 ${selectedCredits().toFixed(1)} 學分。` : `查詢條件：${subject}，共 ${rows.length} 門課。`;
   return `<h1 class="course-title">${title}</h1><section class="query-result"><p>${heading}</p>${simpleGrid(['節次／時間', ...days.map((day) => `星期${day}`)], cells)}</section>`;
 }

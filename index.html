@@ -7,56 +7,52 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260919a" />
+    <link rel="stylesheet" href="styles.css?v=20260919b" />
   </head>
   <body>
-
-    <!-- 學術模擬系統警告彈窗 -->
-    <div id="academic-warning" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:20px;box-sizing:border-box;">
-      <div style="width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);padding:28px;font-family:'Noto Sans TC',sans-serif;color:#333;">
-        <h2 style="margin:0 0 12px;text-align:center;color:#b42318;font-size:26px;">⚠️ 學術模擬系統使用聲明</h2>
-        <p style="text-align:center;font-weight:700;color:#7a271a;margin-bottom:20px;">本網站為學術模擬專案，非國立金門大學官方校務系統</p>
-
-        <ul style="padding-left:22px;line-height:1.8;margin:0;">
-          <li>本網站主要用於程式設計、課程實作與學術展示。</li>
-          <li>系統主要著重於 <strong>選課系統、課程查詢、課表與相關校務功能模擬</strong>。</li>
-          <li>網站內的課程名稱、教師、教室、學分、上課時間、成績、學生資料與公告，可能為 <strong>虛構資料、測試資料或程式自動產生資料</strong>。</li>
-          <li>部分內容與資料可能使用 <strong>人工智慧（AI）協助生成</strong>，可能存在錯誤或與真實情況不符。</li>
-          <li>網站內所呈現的課程與資訊 <strong>不代表國立金門大學實際開課內容或正式校務資料</strong>。</li>
-          <li>請勿將本網站資料作為正式選課、學分認定、成績查詢、畢業審核或其他校務決策依據。</li>
-          <li>如需正式資訊，請以 <strong>國立金門大學官方網站及正式校務資訊系統</strong> 公告為準。</li>
-          <li>本網站不需要真實校務帳號或密碼，請勿輸入身分證字號、真實密碼或其他敏感個人資料。</li>
+    <div id="academic-warning" class="entry-overlay" role="dialog" aria-modal="true" aria-labelledby="warning-title">
+      <div class="entry-card warning-card">
+        <h2 id="warning-title">⚠️ 學術模擬系統使用須知</h2>
+        <p class="entry-emphasis">本網站是課程展示專案，不是國立金門大學官方校務系統。</p>
+        <ul>
+          <li>課程、教師、教室、課表、學分、成績及公告均為模擬資料；部分內容由 AI 或程式生成，可能與實際資料不同。</li>
+          <li>本站的「選課」、「退選」、「查詢」及「申請」只在展示站內操作，不會更動正式校務紀錄。</li>
+          <li>請勿以本站資料辦理選課、學分認定、成績查詢或其他正式校務事項；需要正式資訊時，請至學校官方網站或正式校務系統確認。</li>
+          <li><strong>請勿輸入真實校務密碼、身分證字號或其他敏感資料。</strong>登入欄位僅供模擬，帳號和密碼不會送交學校驗證；姓名、系所與年級只用來建立展示情境。</li>
+          <li>登入頁的驗證碼與在線人數圖片僅供版型展示，不代表即時驗證或即時人數。點選官方查詢連結會離開本站。</li>
         </ul>
-
-        <label style="display:flex;gap:10px;align-items:flex-start;margin-top:22px;padding:14px;background:#f5f5f5;border-radius:8px;cursor:pointer;">
-          <input type="checkbox" id="warning-agree" style="margin-top:4px;">
-          <span>我已閱讀並了解以上內容，知道本網站為學術模擬用途，非正式校務系統。</span>
-        </label>
-
-        <button id="warning-enter" disabled style="width:100%;margin-top:16px;padding:12px;border:0;border-radius:8px;background:#999;color:white;font-size:16px;font-weight:700;cursor:not-allowed;">
-          我已了解，進入模擬系統
-        </button>
+        <label class="entry-consent"><input type="checkbox" id="warning-agree" />我已了解這是非官方展示站，且不會輸入真實校務密碼。</label>
+        <button type="button" id="warning-enter" class="entry-primary" disabled>我已了解，繼續</button>
       </div>
     </div>
-
+    <div id="profile-overlay" class="entry-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-title" hidden>
+      <form id="profile-form" class="entry-card profile-entry-card">
+        <h2 id="profile-title">建立模擬學生資料</h2>
+        <p>請選擇展示用身分。這些資料只用於本次模擬畫面，不會向校方查證。</p>
+        <label>姓名 <input id="login-name" required autocomplete="off" placeholder="展示用姓名" maxlength="24" /></label>
+        <label>系所 <select id="login-department" required></select></label>
+        <label>學制 <select id="login-level"><option value="bachelor">大學部</option><option value="master">碩士班</option><option value="doctoral">博士班</option></select></label>
+        <label>年級 <select id="login-grade"></select></label>
+        <button type="submit" class="entry-primary">確認展示身分</button>
+      </form>
+    </div>
     <section class="login-screen" id="login-screen" aria-labelledby="login-title">
       <div class="login-banner">
         <div class="login-logo-slot"><img src="logo.png?v=20260919a" alt="國立金門大學" /></div>
       </div>
       <div class="login-box">
         <h1 id="login-title">歡迎使用　校務行政資訊系統</h1>
-        <p class="online-count">目前線上人數：<span>31</span></p>
+        <p class="online-count">目前線上人數：<img src="online.png?v=20260919b" alt="展示用在線人數圖片" /></p>
         <form id="login-form" class="login-form">
           <div class="login-mark">NQU</div>
-          <label>帳號 <input id="login-id" required autocomplete="username" placeholder="可任意輸入學號" /></label>
-          <label>密碼 <input id="login-password" type="password" required autocomplete="current-password" placeholder="展示版不驗證" /></label>
-          <label>姓名 <input id="login-name" required placeholder="請輸入姓名" /></label>
-          <label>系所 <select id="login-department" required></select></label>
-          <label>學制 <select id="login-level"><option value="bachelor">大學部</option><option value="master">碩士班</option><option value="doctoral">博士班</option></select></label>
-          <label>年級 <select id="login-grade"></select></label>
-          <div class="login-actions"><button type="submit">確定送出</button><button type="reset">清除重填</button></div>
+          <label>帳號 <input id="login-id" required autocomplete="off" placeholder="展示用學號" /></label>
+          <label>密碼 <input id="login-password" type="password" required autocomplete="new-password" placeholder="任意展示字串" /></label>
+          <label>驗證碼 <input id="login-code" required autocomplete="off" placeholder="任意輸入即可" /></label>
+          <div class="captcha-preview"><img src="code.png?v=20260919b" alt="展示用驗證碼圖片" /><small>靜態示意圖片；輸入任意字串即可</small></div>
+          <div class="login-actions"><a href="https://select.nqu.edu.tw/kmkuas/ag_pro/ag322.jsp" target="_blank" rel="noopener noreferrer">查詢帳號密碼</a><a href="https://select.nqu.edu.tw/kmkuas/ag_pro/ag322_03.jsp" target="_blank" rel="noopener noreferrer">新生學號查詢</a><button type="submit">確定送出</button><button type="reset">清除重填</button></div>
         </form>
-        <p class="login-note">此為前端展示版：帳號與密碼不會驗證、不會保存；登入後將依您填寫的資料建立模擬學生身分。</p>
+        <div class="login-copyright">※請遵守智慧財產權觀念，教科書及教材不得非法影印與使用盜版軟體。</div>
+        <div class="login-note"><p>◆ 建議使用 1024×768 以上解析度，並以 Chrome 瀏覽本展示站。</p><p>◆ 本站非正式校務系統，帳號及密碼僅為畫面展示，請勿輸入真實校務密碼。</p><p>◆ 驗證碼與在線人數為靜態示意圖片；不驗證、不更新即時人數。</p><p>◆ 如需正式帳號或學號資訊，請使用上方連結前往校方網站。</p></div>
       </div>
     </section>
 
@@ -146,37 +142,12 @@
       </article>
     </main>
     </div>
-
     <div class="generation-overlay" id="generation-overlay" hidden role="status" aria-live="polite">
       <div><span class="loading-mark"></span><strong>正在建立 AI 模擬校務資料…</strong><p>課程、成績、課表與公告將依登入條件生成。</p></div>
     </div>
-
-    <script src="ai-config.js"></script>
-    <script src="local-generator.js?v=20260918c"></script>
+    <script src="ai-config.js?v=20260919b"></script>
+    <script src="local-generator.js?v=20260919b"></script>
     <script src="ai-client.js"></script>
-    <script src="app.js?v=20260919a"></script>
-
-    <script>
-      const warningAgree = document.getElementById("warning-agree");
-      const warningEnter = document.getElementById("warning-enter");
-      const academicWarning = document.getElementById("academic-warning");
-
-      warningAgree.addEventListener("change", () => {
-        if (warningAgree.checked) {
-          warningEnter.disabled = false;
-          warningEnter.style.background = "#b42318";
-          warningEnter.style.cursor = "pointer";
-        } else {
-          warningEnter.disabled = true;
-          warningEnter.style.background = "#999";
-          warningEnter.style.cursor = "not-allowed";
-        }
-      });
-
-      warningEnter.addEventListener("click", () => {
-        if (!warningAgree.checked) return;
-        academicWarning.style.display = "none";
-      });
-    </script>
+    <script src="app.js?v=20260919b"></script>
   </body>
 </html>
