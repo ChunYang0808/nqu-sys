@@ -158,3 +158,15 @@ tbody td:nth-child(2) { width:26%; text-align:center; font-weight:700; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .tree-menu section.is-collapsed ul { display:none; }
 @media (max-width:1100px) { .site-header { padding-left:12px; } }
+/* 明顯的選課與申請結果彈窗 */
+.action-dialog { width:min(560px,calc(100vw - 32px)); max-width:560px; padding:0; border:3px solid #3d6ca5; border-radius:6px; background:#fffdf7; color:#17243b; box-shadow:0 22px 70px rgba(0,0,0,.38); font-family:"Noto Sans TC",sans-serif; }
+.action-dialog::backdrop { background:rgba(8,20,46,.58); }
+.action-dialog__head { padding:16px 22px; background:#6899c5; color:#071d3b; }
+.action-dialog__head h2 { margin:0; font-size:23px; line-height:1.4; }
+.action-dialog.is-error { border-color:#a72b32; }
+.action-dialog.is-error .action-dialog__head { background:#a72b32; color:#fff; }
+.action-dialog.is-warning { border-color:#b7791c; }
+.action-dialog.is-warning .action-dialog__head { background:#f2c468; color:#442a08; }
+.action-dialog__message { margin:0; padding:22px 24px; font-size:18px; line-height:1.7; white-space:pre-line; }
+.action-dialog__actions { display:flex; justify-content:flex-end; padding:0 24px 22px; }
+.action-dialog__actions .small-button { min-width:110px; font-size:17px; }
