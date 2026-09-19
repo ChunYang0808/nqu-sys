@@ -1,14 +1,16 @@
 const departments = ['國際暨大陸事務學系', '建築學系', '海洋與邊境管理學系', '應用英語學系', '華語文學系', '都市計畫與景觀學系', '企業管理學系', '工業工程與管理學系', '觀光管理學系', '運動與休閒學系', '電機工程學系', '資訊工程學系', '土木與工程管理學系', '食品科學系', '護理學系', '長期照護學系', '社會工作學系'];
 const shortDepartments = { '資訊工程學系': '資工', '電機工程學系': '電機', '企業管理學系': '企管', '觀光管理學系': '觀光', '運動與休閒學系': '運休', '土木與工程管理學系': '土木', '國際暨大陸事務學系': '國際', '應用英語學系': '應英', '華語文學系': '華文', '食品科學系': '食科', '長期照護學系': '長照', '社會工作學系': '社工', '海洋與邊境管理學系': '海邊', '工業工程與管理學系': '工管', '都市計畫與景觀學系': '都景', '建築學系': '建築', '護理學系': '護理' };
 const csFaculty = ['吳佳駿', '周祥敏', '李錫捷', '柯志亨', '潘進儒', '王建鈞', '趙于翔', '陳正德', '陳鍾誠', '馮玄明'];
-const facultyGivenNames = ['子晴', '承恩', '雅婷', '昱安', '思穎', '柏宇', '若涵', '俊佑', '宜蓁', '家豪', '宥真', '書帆'];
-const facultySurnames = ['林', '陳', '王', '李', '張', '黃', '吳', '蔡', '許', '鄭', '劉', '謝'];
+const facultyGivenNames = ['以安', '子寧', '昱翔', '佳蓉', '柏翰', '思妤', '承叡', '宜庭', '品妍', '冠宇', '郁涵', '詠晴', '佑辰', '庭瑜', '宗翰', '婉如', '嘉哲', '家寧', '芷涵', '彥霖', '曉雯', '弘毅', '俐君', '奕辰', '心怡', '瑋庭', '維安', '淑芬', '哲宇', '明軒', '宛蓉', '韋廷', '映彤', '庭安', '柏勳', '思齊', '若彤', '冠廷', '于珊', '立衡', '靜宜', '書瑋', '宥蓁', '旭東', '姿穎', '浩然', '佩珊', '俊豪', '秉諺', '柔安', '明慧', '詠恩', '俞潔', '建宏', '庭萱', '柏鈞', '博文', '淑儀', '孟庭', '偉誠', '子謙', '明哲', '欣怡', '宸宇', '佳玲', '少華', '依晴', '宥均', '永傑', '玟蓉', '志豪', '詩涵', '佳穎', '冠霖', '育珊', '聿廷', '欣瑜', '巧琳', '浩宇', '孟軒', '之晴', '景翔', '欣妤', '雅慧', '紘宇', '穎珊', '育銘', '昱廷', '淑惠', '若寧'];
+const facultySurnames = ['林', '陳', '張', '李', '王', '黃', '吳', '蔡', '劉', '許', '鄭', '謝', '楊', '洪', '郭', '蘇', '曾', '沈', '朱', '葉', '何', '羅', '呂', '邱', '周', '徐', '高', '彭', '江', '廖', '賴', '鍾'];
 const generalFaculty = ['林知遠', '陳映彤', '王書庭', '李嘉恩', '張語晴', '黃柏鈞', '許欣然', '鄭思齊', '劉品妤', '謝宗翰'];
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 const safeCourseText = (value) => String(value ?? '').replace(/[<>]/g, '').slice(0, 120);
 const sportFaculty = ['周昱廷', '林怡萱', '陳彥勳', '張育誠', '黃欣怡', '許柏宇', '劉冠廷', '蔡宜庭'];
 const chineseFaculty = ['林書妤', '陳婉晴', '王冠文', '李宜臻', '張思涵', '黃家緯', '許庭瑜', '劉詠心', '蔡孟潔', '鄭雅琳'];
 const englishFaculty = ['林艾琳', '陳凱文', '王伊婷', '李安琪', '張潔西', '黃美玲', '許莉莎', '劉雅倫', '蔡凱特', '鄭偉倫'];
+const facultyNamesByDepartment = new Map();
+const usedFacultyNames = new Set([...csFaculty, ...generalFaculty, ...sportFaculty, ...chineseFaculty, ...englishFaculty]);
 const departmentRooms = {
   '資訊工程學系': ['I101', 'I102', 'I103', 'E318', 'E319', 'E320', 'E321'],
   '電機工程學系': ['E220', 'E221', 'E222', 'E223'],
@@ -271,6 +273,9 @@ loginForm.addEventListener('submit', async (event) => {
   clubApplication = '';
   clubOptions = [...demoClubPool].sort(() => Math.random() - 0.5).slice(0, 15);
   departmentCatalogCache.clear();
+  facultyNamesByDepartment.clear();
+  usedFacultyNames.clear();
+  [...csFaculty, ...generalFaculty, ...sportFaculty, ...chineseFaculty, ...englishFaculty].forEach((name) => usedFacultyNames.add(name));
   historicalRecordCache.clear();
   generatedRecord = normalizeRecord(window.NQU_LOCAL.generateStudentRecord(generationContext), department, gradeText);
   initializeSelections();
@@ -343,8 +348,22 @@ const roomDirectory = new Map(classrooms.map((entry) => {
 
 function facultyFor(department) {
   if (department === '資訊工程學系') return csFaculty;
-  const offset = Math.max(0, departments.indexOf(department));
-  return facultyGivenNames.map((given, index) => `${facultySurnames[(index + offset) % facultySurnames.length]}${given}`);
+  if (facultyNamesByDepartment.has(department)) return facultyNamesByDepartment.get(department);
+  const names = [];
+  const chosenSurnames = new Set();
+  const chosenGivenNames = new Set();
+  while (names.length < 12) {
+    const surname = facultySurnames[Math.floor(Math.random() * facultySurnames.length)];
+    const given = facultyGivenNames[Math.floor(Math.random() * facultyGivenNames.length)];
+    const name = `${surname}${given}`;
+    if (usedFacultyNames.has(name) || chosenSurnames.has(surname) || chosenGivenNames.has(given)) continue;
+    names.push(name);
+    chosenSurnames.add(surname);
+    chosenGivenNames.add(given);
+    usedFacultyNames.add(name);
+  }
+  facultyNamesByDepartment.set(department, names);
+  return names;
 }
 
 function roomFor(department, index) {
